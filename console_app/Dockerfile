@@ -1,7 +1,7 @@
 FROM node:18-slim as builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN rm -f package-lock.json && npm install --legacy-peer-deps
+RUN rm -rf node_modules package-lock.json && npm install --legacy-peer-deps
 COPY . .
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
