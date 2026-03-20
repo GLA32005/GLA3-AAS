@@ -9,7 +9,15 @@ from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+import os
 config = context.config
+
+# 动态从环境变量获取数据库地址，适配 Docker 环境
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    # alembic 内部使用的驱动是同步的，但 env.py 已经配置了异步支持
+    # 确保 URL 使用 asyncpg 协议
+    config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
