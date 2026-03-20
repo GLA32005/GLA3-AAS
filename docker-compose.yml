@@ -76,6 +76,8 @@ services:
     build:
       context: ./console_app
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
     ports:
       - "3000:80"
     networks:
