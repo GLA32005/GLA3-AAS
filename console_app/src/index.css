@@ -1,14 +1,11 @@
-@import "tailwindcss";
-
-@theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
     background-color: #f9fafb;
     color: #1a1a1a;
-    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.01em;
   }
