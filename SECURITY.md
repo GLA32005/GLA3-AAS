@@ -1,31 +1,31 @@
-# Security Policy
+# 安全政策 (Security Policy)
 
-## Supported Versions
-We currently provide active security support for the following versions of AgentSec:
+## 支持的版本
+我们目前为以下版本的 AgentSec 提供及时的安全支持：
 
-| Version | Supported          |
+| 版本 | 是否支持 |
 | ------- | ------------------ |
 | v1.5.x  | :white_check_mark: |
 | v1.0.x  | :white_check_mark: |
 | < 1.0   | :x:                |
 
-## Reporting a Vulnerability
-We take the security of AgentSec and our users sincerely. If you believe you have found a security vulnerability in AgentSec (e.g. bypasses to the rule engine, SSRF in the console backend, or issues in the AST scanner), please report it to us immediately.
+## 报告安全漏洞
+我们非常重视 AgentSec 的安全性。如果您发现 AgentSec 存在安全漏洞（例如：规则引擎绕过、控制台后端 SSRF 或 AST 扫描器漏洞等），请立即向我们报告。
 
-**DO NOT create a public GitHub issue.** Instead, please send an email to `security@agentsec.io`.
+**请勿直接在 GitHub 上提交公开的 Issue。** 请发送邮件至：`security@agentsec.io`。
 
-### What to Include
-Please provide as much information as possible to help us reproduce the issue:
-1. Type of issue (e.g., prompt injection bypass, RCE, authorization failure).
-2. The version of AgentSec affected.
-3. Proof-of-Concept (PoC) code or exact steps to reproduce.
-4. The potential impact of the vulnerability.
+### 报告要求
+请尽可能提供详细信息，以帮助我们复现问题：
+1. 漏洞类型（例如：提示词注入绕过、远程代码执行 RCE、越权访问等）。
+2. 受影响的 AgentSec 版本。
+3. 复现代码 (PoC) 或详细的复现步骤。
+4. 该漏洞的潜在影响范围。
 
-### Response SLA
-When a vulnerability is reported:
-* We will acknowledge receipt of your report within **48 hours**.
-* We will provide a triage assessment and an estimated timeline for a fix within **5 working days**.
-* Once the vulnerability is patched, we will notify you and request verification.
-* After the patch is released deployed, you will be publicly acknowledged (if desired) in our release notes and Security Advisories.
+### 响应时效 (SLA)
+收到漏洞报告后：
+* 我们将在 **48 小时内** 确认收到报告。
+* 我们将在 **5 个工作日内** 提供初步评估结果及修复预估时间。
+* 修复补丁发布后，我们将通知并邀请您参与验证。
+* 漏洞修复后，征得您的同意，我们将在发布日志和安全公告中对您的贡献表示诚挚鸣谢。
 
-**Thank you for making AgentSec safer for the entire open-source AI community.**
+**感谢您为开源 AI 社区的安全做出的杰出贡献。**
