@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql+asyncpg://agentsec:agentsec_pwd@db:5432/agentsec
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - agentsec_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/dashboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=agentsec
+      - POSTGRES_PASSWORD=agentsec_pwd
+      - POSTGRES_DB=agentsec
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - agentsec_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentsec"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - agentsec_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: ["python", "agentsec/server/worker.py"]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql+asyncpg://agentsec:agentsec_pwd@db:5432/agentsec
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - agentsec_net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    # ... (existing frontend config)
+    build:
+      context: ./console_app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    networks:
+      - agentsec_net
+    depends_on:
+      - backend
+
+  demo_agent:
+    # ... (existing demo_agent config)
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+    environment:
+      - CONSOLE_URL=http://backend:8000
+    networks:
+      - agentsec_net
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  agentsec_net:
+    driver: bridge
+
+volumes:
+  db_data:
+  redis_data:

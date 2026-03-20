@@ -1,0 +1,13 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# 为了加快国内构建速度可换源，此处使用默认
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt || true
+# Fallback if requirements not present
+RUN pip install fastapi uvicorn pydantic requests langchain-core
+
+COPY . .
+ENV PYTHONPATH=/app
+CMD ["uvicorn", "agentsec.server.app:app", "--host", "0.0.0.0", "--port", "8000"]

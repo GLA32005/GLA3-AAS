@@ -1,0 +1,8 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+RUN pip install requests langchain-core
+COPY . .
+ENV PYTHONPATH=/app
+
+CMD ["python", "demo/demo_agent.py"]

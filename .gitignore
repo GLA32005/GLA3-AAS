@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Node.js
+node_modules/
+
+# OS generated files
+.DS_Store
+
+# Agent Workspace
+.gemini/
+
+# Project Specific
+*.docx
+cankao/
