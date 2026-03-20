@@ -1,4 +1,4 @@
-FROM node:18-alpine as builder
+FROM node:18-slim as builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN rm -f package-lock.json && npm install --legacy-peer-deps
