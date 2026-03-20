@@ -14,7 +14,8 @@ export const API_ENDPOINTS = {
   RULES: `${API_BASE_URL}/api/rules`,
   AUDIT_LOGS: `${API_BASE_URL}/api/audit-logs`,
   SETTINGS: `${API_BASE_URL}/api/settings`,
-  LOGIN: `${API_BASE_URL}/api/login`,
+  LOGIN: `${API_BASE_URL}/api/auth/login`,
+  LOGOUT: `${API_BASE_URL}/api/auth/logout`,
 };
 
 export default API_BASE_URL;
