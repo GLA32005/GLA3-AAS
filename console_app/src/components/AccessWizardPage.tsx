@@ -1,20 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   CheckCircle2, 
-  Circle, 
   ArrowRight, 
   Copy, 
   Terminal, 
   Shield, 
   Zap, 
-  Cpu, 
   Server, 
-  Download, 
   Info, 
   AlertCircle,
   X
 } from 'lucide-react';
-import axios from 'axios';
 
 interface StepProps {
   active: boolean;
