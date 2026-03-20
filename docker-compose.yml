@@ -16,7 +16,7 @@ services:
     networks:
       - agentsec_net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/dashboard"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 3
