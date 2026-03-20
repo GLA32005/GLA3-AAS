@@ -3,13 +3,14 @@ import axios from 'axios';
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, CartesianGrid } from 'recharts';
 import { Activity, ShieldAlert, Thermometer, Zap, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { API_ENDPOINTS } from '../lib/api';
 
 export function Dashboard() {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
     // 调用 FastAPI 端点获取数据
-    axios.get('http://127.0.0.1:8000/api/dashboard')
+    axios.get(API_ENDPOINTS.DASHBOARD)
       .then(res => setData(res.data))
       .catch(err => console.error("Failed to fetch dashboard data:", err));
   }, []);

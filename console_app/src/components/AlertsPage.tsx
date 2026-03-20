@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, ShieldAlert } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { API_ENDPOINTS } from '../lib/api';
 
 interface AlertsPageProps {
     onViewDetail: (alertId: string) => void;
@@ -15,7 +16,7 @@ export function AlertsPage({ onViewDetail }: AlertsPageProps) {
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        axios.get('http://127.0.0.1:8000/api/alerts')
+        axios.get(API_ENDPOINTS.ALERTS)
             .then(res => setAlerts(res.data.alerts))
             .catch(err => console.error("Failed to fetch alerts:", err));
     }, []);

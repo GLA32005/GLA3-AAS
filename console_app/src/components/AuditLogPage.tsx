@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { History, Search, Download, Filter, User, Activity, CheckCircle2, XCircle } from 'lucide-react';
 import axios from 'axios';
 import { cn } from '../lib/utils';
+import { API_ENDPOINTS } from '../lib/api';
 
 export function AuditLogPage() {
     const [logs, setLogs] = useState<any[]>([]);
@@ -11,7 +12,7 @@ export function AuditLogPage() {
     useEffect(() => {
         const fetchLogs = async () => {
             try {
-                const res = await axios.get('http://127.0.0.1:8000/api/audit-logs');
+                const res = await axios.get(API_ENDPOINTS.AUDIT_LOGS);
                 setLogs(res.data);
             } catch (err) {
                 console.error("Failed to fetch logs:", err);

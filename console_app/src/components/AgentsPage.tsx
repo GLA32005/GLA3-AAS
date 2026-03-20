@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Users, Shield, Cpu, ActivitySquare } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { API_ENDPOINTS } from '../lib/api';
 
 interface AgentsPageProps {
     onViewReport: (agentName: string) => void;
@@ -11,7 +12,7 @@ export function AgentsPage({ onViewReport }: AgentsPageProps) {
     const [agents, setAgents] = useState<any[]>([]);
 
     useEffect(() => {
-        axios.get('http://127.0.0.1:8000/api/agents')
+        axios.get(API_ENDPOINTS.AGENTS)
           .then(res => setAgents(res.data.agents))
           .catch(err => console.error("Failed to fetch agents:", err));
       }, []);

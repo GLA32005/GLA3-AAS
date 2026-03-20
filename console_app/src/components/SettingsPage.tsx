@@ -2,6 +2,7 @@ import { Settings, Save, Shield, RefreshCcw, Database, UserCheck, Globe, Bell, C
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { cn } from '../lib/utils';
+import { API_ENDPOINTS } from '../lib/api';
 
 export function SettingsPage() {
     const [syncInterval, setSyncInterval] = useState(60);
@@ -13,7 +14,7 @@ export function SettingsPage() {
     const [saveStatus, setSaveStatus] = useState<null | 'saving' | 'saved'>(null);
 
     useEffect(() => {
-        axios.get('http://127.0.0.1:8000/api/settings/push')
+        axios.get(`${API_ENDPOINTS.SETTINGS}/push`)
             .then(res => setPushConfig(res.data))
             .catch(err => console.error("Failed to fetch push settings:", err));
     }, []);
@@ -21,7 +22,7 @@ export function SettingsPage() {
     const handleSave = async () => {
         setSaveStatus('saving');
         try {
-            await axios.post('http://127.0.0.1:8000/api/settings/push', pushConfig);
+            await axios.post(`${API_ENDPOINTS.SETTINGS}/push`, pushConfig);
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus(null), 2000);
         } catch (err) {
@@ -157,7 +158,7 @@ export function SettingsPage() {
                             <div className="space-y-4">
                                 <div className="flex flex-col gap-1.5 cursor-text">
                                     <label className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">SDK 数据回流端点</label>
-                                    <input type="text" readOnly value="http://localhost:8000/api/sdk/events" className="px-3 py-2 text-[12px] bg-zinc-50 border border-zinc-200 rounded-md font-mono text-zinc-500 outline-none select-all" />
+                                    <input type="text" readOnly value={`${API_ENDPOINTS.AGENTS.replace('/agents', '/sdk/events')}`} className="px-3 py-2 text-[12px] bg-zinc-50 border border-zinc-200 rounded-md font-mono text-zinc-500 outline-none select-all" />
                                     <p className="text-[10px] text-zinc-400">所有纳管 Agent 必须配置此地址作为 security_callback 的远端汇聚点。</p>
                                 </div>
                                 <div className="flex flex-col gap-1.5 cursor-text">

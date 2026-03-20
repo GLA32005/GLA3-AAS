@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, ShieldAlert, History, Play, Info, Layers, Code, Shield, CheckCircle2, RotateCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../lib/api';
 
 interface AlertDetailViewProps {
   onBack: () => void;
@@ -18,7 +19,7 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
   const handleApprove = async (action: 'approve' | 'reject') => {
     setApprovalStatus(action === 'approve' ? 'approving' : 'rejected' as any);
     try {
-      await axios.post('http://127.0.0.1:8000/api/alerts/action', {
+      await axios.post(`${API_ENDPOINTS.ALERTS}/action`, {
         alert_id: parseInt(alertId),
         action: action
       });
@@ -32,7 +33,7 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
   const runStaticScan = async (agentName: string) => {
     setIsScanning(true);
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/api/scanner/analyze/${agentName}`);
+      const res = await axios.get(`${API_ENDPOINTS.RULES.replace('/rules', '/scanner/analyze')}/${agentName}`);
       setScanResults(res.data.findings);
     } catch (err) {
       console.error("Scan failed:", err);
@@ -112,7 +113,7 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
     
     setFeedbackStatus('sending');
     try {
-      await axios.post('http://127.0.0.1:8000/api/alerts/feedback', {
+      await axios.post(`${API_ENDPOINTS.ALERTS}/feedback`, {
         alert_id: alertId,
         agent_name: current.agent,
         rule_id: current.rule_id || "r1", // 模拟从告警中获取规则ID

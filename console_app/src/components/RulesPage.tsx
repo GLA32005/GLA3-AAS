@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Layers, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { API_ENDPOINTS } from '../lib/api';
 
 export function RulesPage() {
     const [rules, setRules] = useState<any[]>([]);
     const [meta, setMeta] = useState<any>(null);
 
     useEffect(() => {
-        axios.get('http://127.0.0.1:8000/api/rules')
+        axios.get(API_ENDPOINTS.RULES)
           .then(res => {
               setRules(res.data.rules);
               setMeta(res.data);
