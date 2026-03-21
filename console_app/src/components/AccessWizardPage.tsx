@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -9,8 +9,15 @@ import {
   Server, 
   Info, 
   AlertCircle,
-  X
+  X,
+  RefreshCw,
+  Cpu,
+  Activity,
+  ChevronRight,
+  Monitor
 } from 'lucide-react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../lib/api';
 
 interface StepProps {
   active: boolean;
@@ -22,17 +29,22 @@ interface StepProps {
 const StepIndicator = ({ active, done, index, label }: StepProps) => (
   <div className="flex items-center flex-1">
     <div className={`
-      w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all duration-300
-      ${active ? 'bg-zinc-900 border-zinc-900 text-white' : 
+      w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-mono border-2 transition-all duration-500
+      ${active ? 'bg-zinc-900 border-zinc-900 text-white scale-110 shadow-lg' : 
         done ? 'bg-emerald-500 border-emerald-500 text-white' : 
-        'bg-zinc-100 border-zinc-200 text-zinc-400'}
+        'bg-white border-zinc-200 text-zinc-400'}
     `}>
-      {done ? <CheckCircle2 size={12} /> : index}
+      {done ? <CheckCircle2 size={16} /> : index}
     </div>
-    <span className={`ml-2 text-[11px] font-medium whitespace-nowrap ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
-      {label}
-    </span>
-    {index < 4 && <div className="flex-1 h-[1px] bg-zinc-100 mx-4" />}
+    <div className="ml-3 flex flex-col">
+      <span className={`text-[11px] font-bold uppercase tracking-tighter ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
+        STEP {index}
+      </span>
+      <span className={`text-[13px] font-medium whitespace-nowrap ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
+        {label}
+      </span>
+    </div>
+    {index < 4 && <div className={`flex-1 h-[1.5px] mx-6 transition-all duration-1000 ${done ? 'bg-emerald-200' : 'bg-zinc-100'}`} />}
   </div>
 );
 
@@ -42,15 +54,17 @@ export function AccessWizardPage() {
     name: '',
     businessLine: '',
     owner: '',
-    environment: 'Production',
-    framework: 'LangChain'
+    mode: 'warn'
   });
-  const [token] = useState(() => `agent_${Math.random().toString(36).substr(2, 8)}`);
-  const [showGuide, setShowGuide] = useState(false);
-  const [checkStatus, setCheckStatus] = useState<any[]>([]);
-  const [isChecking, setIsChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState('');
+  const [token] = useState(() => `agt_${Math.random().toString(36).substr(2, 20)}`);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [onboardStatus, setOnboardStatus] = useState<any>({ current_step: 0, steps: {}, is_finished: false });
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingRef = useRef<any>(null);
+
+  // ── Auto-generate Install Command ──
+  const backendUrl = API_ENDPOINTS.DASHBOARD.replace('/api/dashboard', '');
+  const installCmd = `curl -sSL "${backendUrl}/api/install.sh?token=${token}&agent_name=${formData.name}" | bash`;
 
   const handleCopy = async (text: string, id: string) => {
     try {
@@ -65,384 +79,338 @@ export function AccessWizardPage() {
   const nextStep = () => setStep(s => Math.min(s + 1, 4));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
-  const runCheck = async () => {
-    setIsChecking(true);
-    setCheckResult('正在建立连接...');
-    
-    const checks = [
-      { id: 'c1', label: 'SDK 连通性状态', result: 'SDK 连接成功' },
-      { id: 'c2', label: '核心规则库加载', result: '已加载 v2.41 (124 条规则)' },
-      { id: 'c3', label: 'ONNX 语义模型状态', result: '边缘推理引擎就绪 (82MB)' },
-      { id: 'c4', label: '高危告警上报链路', result: '上报延迟 42ms (正常)' },
-      { id: 'c5', label: 'P99 性能延迟自检', result: '本地拦截延迟 14ms ✓' }
-    ];
-
-    const currentChecks: any[] = [];
-    for (let i = 0; i < checks.length; i++) {
-      await new Promise(r => setTimeout(r, 800));
-      currentChecks.push({ ...checks[i], status: 'success' });
-      setCheckStatus([...currentChecks]);
+  // ── Polling Onboard Status ──
+  useEffect(() => {
+    if (step === 3 && !isPolling) {
+      setIsPolling(true);
+      pollingRef.current = setInterval(async () => {
+        try {
+          const res = await axios.get(`${backendUrl}/api/agents/onboard-status/${token}`);
+          setOnboardStatus(res.data);
+          if (res.data.is_finished) {
+            clearInterval(pollingRef.current);
+            setIsPolling(false);
+            setTimeout(() => setStep(4), 1500);
+          }
+        } catch (e) {
+          console.error("Polling failed", e);
+        }
+      }, 2000);
     }
-    
-    setCheckResult('全部检查通过');
-    setIsChecking(false);
-    
-    // Auto proceed to success after a short delay
-    setTimeout(() => nextStep(), 1000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [step, token]);
+
+  const StatusItem = ({ id, label, icon: Icon }: any) => {
+    const stepData = onboardStatus.steps[id];
+    const isCurrent = onboardStatus.current_step === parseInt(id);
+    const isDone = parseInt(id) < onboardStatus.current_step || (isCurrent && stepData?.status === 'success');
+    const isFail = stepData?.status === 'fail';
+
+    return (
+      <div className={`
+        flex items-center gap-4 p-4 rounded-xl border transition-all duration-300
+        ${isDone ? 'bg-emerald-50/50 border-emerald-100' : isCurrent ? 'bg-zinc-50 border-zinc-200 shadow-sm' : 'bg-white border-zinc-100 opacity-60'}
+      `}>
+        <div className={`
+            w-10 h-10 rounded-xl flex items-center justify-center
+            ${isDone ? 'bg-emerald-500 text-white' : isFail ? 'bg-red-500 text-white' : isCurrent ? 'bg-zinc-900 text-white animate-pulse' : 'bg-zinc-100 text-zinc-400'}
+        `}>
+          {isDone ? <CheckCircle2 size={20} /> : <Icon size={20} />}
+        </div>
+        <div className="flex-1">
+          <div className="flex justify-between items-center mb-1">
+            <span className={`text-[13px] font-bold ${isDone ? 'text-emerald-700' : isCurrent ? 'text-zinc-900' : 'text-zinc-400'}`}>
+              {label}
+            </span>
+            {stepData?.time && <span className="text-[10px] font-mono text-zinc-400">{stepData.time}</span>}
+          </div>
+          <p className={`text-[12px] ${isDone ? 'text-emerald-600/70' : isFail ? 'text-red-500' : 'text-zinc-500'}`}>
+            {stepData?.message || (isCurrent ? '等待数据回传...' : '准备就绪')}
+          </p>
+        </div>
+        {isCurrent && !isDone && <RefreshCw size={14} className="animate-spin text-zinc-400" />}
+      </div>
+    );
   };
 
-  const DeploymentGuide = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-8 animate-in fade-in duration-300">
-      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
-        <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-          <div className="flex items-center gap-2">
-            <Shield size={18} className="text-zinc-900" />
-            <h3 className="font-bold text-zinc-900">AgentSec 深层接入指南</h3>
-          </div>
-          <button onClick={() => setShowGuide(false)} className="p-2 hover:bg-zinc-200 rounded-full transition-all">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-8 space-y-10">
-          <section className="grid grid-cols-2 gap-8">
-            <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-emerald-100">
-              <div className="bg-emerald-50 border-b border-emerald-100 px-6 py-3 flex items-center gap-2 text-emerald-700 font-medium text-[13px]">
-                <CheckCircle2 size={14} /> 推荐方案：SDK 嵌入本地进程
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="border border-dashed border-emerald-300 rounded-xl p-4 bg-emerald-50/30 space-y-3">
-                  <div className="flex items-center gap-3 bg-white p-3 rounded-md border border-emerald-200 shadow-sm">
-                    <div className="w-8 h-8 rounded bg-indigo-50 flex items-center justify-center text-indigo-600"><Zap size={18} /></div>
-                    <div className="text-[12px] font-bold">Agent 业务进程</div>
-                  </div>
-                  <div className="flex justify-center"><ArrowRight size={14} className="text-emerald-300 rotate-90" /></div>
-                  <div className="flex items-center gap-3 bg-emerald-600 p-3 rounded-md border border-emerald-700 text-white shadow-md">
-                    <Shield size={18} />
-                    <div className="text-[12px] font-bold">AgentSec SDK</div>
-                  </div>
-                </div>
-                <div className="text-[11px] text-emerald-700 bg-emerald-50 p-2 rounded text-center">
-                  微秒级延迟，断网仍可完全拦截风险。
-                </div>
-              </div>
-            </div>
-            <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm opacity-60 grayscale-[0.5]">
-              <div className="bg-red-50 border-b border-zinc-100 px-6 py-3 flex items-center gap-2 text-red-700 font-medium text-[13px]">
-                <AlertCircle size={14} /> 备选方案：远程云端检测
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="border border-dashed border-zinc-300 rounded-xl p-4 bg-zinc-50 space-y-3">
-                  <div className="flex items-center gap-3 bg-white p-3 rounded-md border border-zinc-200">
-                    <Zap size={18} className="text-zinc-400" />
-                    <div className="text-[12px] font-bold text-zinc-400">Agent 业务进程</div>
-                  </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <ArrowRight size={14} className="text-red-300 rotate-90" />
-                    <span className="text-[10px] text-red-400">200ms 网络延迟</span>
-                  </div>
-                  <div className="flex items-center gap-3 bg-white p-3 rounded-md border border-red-100">
-                    <Server size={18} className="text-red-400" />
-                    <div className="text-[12px] font-bold text-red-400">远程安全 Cluster</div>
-                  </div>
-                </div>
-                <div className="text-[11px] text-red-600 bg-red-50 p-2 rounded text-center">
-                  受网络波动影响，且可能造成业务阻塞。
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-4">
-            <h4 className="text-[14px] font-bold text-zinc-900 border-l-4 border-zinc-900 pl-3">典型集成代码 (LangChain)</h4>
-            <div className="bg-zinc-900 rounded-xl p-5 font-mono text-[12px] text-zinc-300 leading-relaxed relative">
-              <pre>
-{`from agentsec import AgentSecurityCallback
-
-# 创建安全回调
-security_callback = AgentSecurityCallback(
-    agent_name="HR-Assistant", 
-    business_line="HR",
-    mode="block" # 命中风险直接拦截
-)
-
-# 注入 Agent
-agent_executor.run(
-    "帮助我筛选简历...", 
-    callbacks=[security_callback]
-)`}
-              </pre>
-            </div>
-          </section>
-
-          <section className="bg-zinc-50 p-6 rounded-xl border border-zinc-100">
-            <h4 className="flex items-center gap-2 text-[14px] font-bold text-zinc-900 mb-3">
-              <Info size={16} /> 离线部署说明 (Air-Gapped)
-            </h4>
-            <p className="text-[12px] text-zinc-500 leading-relaxed">
-              如果您的生产环境无法连接互联网，可以联系管理员获取最新的 <span className="text-zinc-900 font-bold">rules.onnx.zip</span> 部署包。手动解压至 <code className="bg-zinc-200 px-1 rounded">~/.agentsec/</code> 目录下，SDK 将自动识别并启动全量防御。
-            </p>
-          </section>
-        </div>
-        <div className="p-6 border-t border-zinc-100 bg-zinc-50/50 flex justify-end">
-          <button 
-            onClick={() => setShowGuide(false)}
-            className="px-6 py-2 bg-zinc-900 text-white rounded-md text-[13px] font-bold hover:shadow-lg transition-all"
-          >
-            我已了解
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="p-10 max-w-[1000px] mx-auto animate-in fade-in duration-500">
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">Agent 接入向导</h1>
-        <p className="text-zinc-500 text-[14px] mt-2">简单四步，为您的 AI Agent 开启生产级安全防护。</p>
-      </div>
-
-      <div className="flex gap-0 mb-12">
-        <StepIndicator active={step === 1} done={step > 1} index={1} label="基本信息" />
-        <StepIndicator active={step === 2} done={step > 2} index={2} label="SDK 安装" />
-        <StepIndicator active={step === 3} done={step > 3} index={3} label="连通性自检" />
-        <StepIndicator active={step === 4} done={step > 4} index={4} label="接入完成" />
-      </div>
-
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden min-h-[500px] flex flex-col">
-        {step === 1 && (
-          <div className="p-10 flex-1 flex flex-col animate-in slide-in-from-right-4 duration-300">
-            <h2 className="text-lg font-bold text-zinc-900 mb-6 flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-zinc-900 rounded-full" /> 填写 Agent 基本信息
-            </h2>
-            <div className="grid grid-cols-2 gap-8 flex-1">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">Agent 名称 *</label>
-                  <input 
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-3 text-[14px] focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 transition-all"
-                    placeholder="例如: customer-service-bot"
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">所属业务线 *</label>
-                  <select 
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-3 text-[14px] focus:outline-none transition-all"
-                    value={formData.businessLine}
-                    onChange={e => setFormData({...formData, businessLine: e.target.value})}
-                  >
-                    <option value="">请选择业务线</option>
-                    <option value="HR">人力资源 (HR)</option>
-                    <option value="Finance">财务 (Finance)</option>
-                    <option value="CS">核心业务/客服</option>
-                    <option value="Dev">技术研发</option>
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">负责人 *</label>
-                  <input 
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-3 text-[14px] focus:outline-none transition-all"
-                    placeholder="姓名或邮箱"
-                    value={formData.owner}
-                    onChange={e => setFormData({...formData, owner: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">Agent 框架</label>
-                  <select 
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-3 text-[14px] focus:outline-none transition-all"
-                    value={formData.framework}
-                    onChange={e => setFormData({...formData, framework: e.target.value})}
-                  >
-                    <option>LangChain</option>
-                    <option>CrewAI</option>
-                    <option>AutoGen</option>
-                    <option>Other / Custom</option>
-                  </select>
-                </div>
-              </div>
+    <div className="min-h-screen bg-zinc-50/50 p-8 lg:p-12 animate-in fade-in duration-700">
+      <div className="max-w-5xl mx-auto">
+        <header className="flex justify-between items-center mb-12">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-xl rotate-3">
+              <Shield size={22} strokeWidth={2.5} />
             </div>
-            <div className="pt-8 border-t border-zinc-100 flex justify-end">
-              <button 
-                onClick={nextStep}
-                disabled={!formData.name || !formData.businessLine || !formData.owner}
-                className="group flex items-center gap-2 px-8 py-3 bg-zinc-900 text-white rounded-lg text-[14px] font-bold hover:bg-zinc-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-zinc-200"
-              >
-                下一步：获取接入代码 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </button>
+            <div>
+              <h1 className="text-xl font-black text-zinc-900 tracking-tighter uppercase italic">AgentSec <span className="text-emerald-500 NOT-italic font-mono text-sm ml-1 select-none">v2.5</span></h1>
+              <p className="text-xs text-zinc-400 font-medium">Enterprise Security Hub • Onboarding</p>
             </div>
           </div>
-        )}
+          <div className="hidden md:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-emerald-700 font-mono uppercase tracking-wide">Cloud Console Connected</span>
+          </div>
+        </header>
 
-        {step === 2 && (
-          <div className="p-10 flex-1 flex flex-col animate-in slide-in-from-right-4 duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                <div className="w-1.5 h-6 bg-zinc-900 rounded-full" /> 安装 SDK 并接入代码
-              </h2>
-              <button 
-                onClick={() => setShowGuide(true)}
-                className="text-[12px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-full transition-all"
-              >
-                <Server size={14} /> 查看接入指南 (架构/离线模式)
-              </button>
-            </div>
-            
-            <p className="text-[13px] text-zinc-500 mb-8">
-              已为 <strong className="text-zinc-900">{formData.name}</strong> 生成专属配置。复制以下代码到您的应用中。
-            </p>
+        <div className="flex gap-0 mb-16 px-4">
+          <StepIndicator active={step === 1} done={step > 1} index={1} label="Agent 信息" />
+          <StepIndicator active={step === 2} done={step > 2} index={2} label="获取安装预览" />
+          <StepIndicator active={step === 3} done={step > 3} index={3} label="实时心跳监测" />
+          <StepIndicator active={step === 4} done={step > 4} index={4} label="接入完成" />
+        </div>
 
-            <div className="space-y-6 flex-1">
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">命令行：安装 SDK (推荐使用虚拟环境)</label>
-                  <button 
-                    onClick={() => handleCopy("python3 -m venv venv && source venv/bin/activate && pip install agentsec", 'pip')}
-                    className="text-[10px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors"
-                  >
-                    {copiedId === 'pip' ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12}/>}
-                    {copiedId === 'pip' ? <span className="text-emerald-600 font-bold">已复制!</span> : '复制'}
-                  </button>
-                </div>
-                <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative font-mono text-[12px] leading-relaxed">
-                  <div className="text-zinc-500 italic mb-1"># 方案 A: 本地开发测试 (在代码库目录下执行)</div>
-                  <div className="text-zinc-300 mb-4">pip install -e .</div>
-                  
-                  <div className="text-zinc-500 italic mb-1"># 方案 B: 跨主机生产测试 (直接从 GitHub 安装)</div>
-                  <div className="text-zinc-300">pip install git+https://github.com/GLA32005/GLA3-AAS.git</div>
-                </div>
-                <p className="text-[10px] text-zinc-500 italic">注：Host B 跨主机安装请优先选择方案 B。安装完成后请务必设置 AGENTSEC_API_URL 指向 Host A 的 IP。</p>
+        <div className="bg-white border border-zinc-200 rounded-[24px] shadow-2xl shadow-zinc-200/50 overflow-hidden min-h-[580px] flex flex-col relative">
+          {/* Progress Overlays */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-zinc-100">
+             <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${(step/4)*100}%` }} />
+          </div>
+
+          {step === 1 && (
+            <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
+              <div className="mb-10">
+                <h2 className="text-3xl font-black text-zinc-900 tracking-tight mb-2">配置您的资产身份</h2>
+                <p className="text-zinc-500 text-[15px]">填写 Agent 基本信息，向导将自动生成包含预检逻辑的一键安装脚本。</p>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">代码：业务配置</label>
-                  <button 
-                    onClick={() => handleCopy(`from agentsec import AgentSecurityCallback\n\ncallback = AgentSecurityCallback(\n    agent_name="${formData.name}",\n    agent_token="${token}",\n    mode="warn"\n)`, 'code')}
-                    className="text-[10px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors"
-                  >
-                    {copiedId === 'code' ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12}/>}
-                    {copiedId === 'code' ? <span className="text-emerald-600 font-bold">已复制!</span> : '复制'}
-                  </button>
-                </div>
-                <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative font-mono text-[12px] leading-relaxed">
-                  <div className="text-zinc-500 italic mb-2"># 注入身份元数据，系统将自动建立资产台账</div>
-                  <div className="text-zinc-300">
-                    <span className="text-purple-400">from</span> agentsec <span className="text-purple-400">import</span> AgentSecurityCallback<br/><br/>
-                    callback = AgentSecurityCallback(<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;agent_name=<span className="text-emerald-400">"{formData.name}"</span>,<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;agent_token=<span className="text-emerald-400">"{token}"</span>,<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;mode=<span className="text-emerald-400">"warn"</span><br/>
-                    )
+              <div className="grid grid-cols-2 gap-10 flex-1">
+                <div className="space-y-8">
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">Agent 名称</label>
+                    <input 
+                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-4 text-[14px] font-medium focus:outline-none focus:border-zinc-900 focus:ring-4 focus:ring-zinc-900/5 transition-all outline-none"
+                      placeholder="例如: cs-assistant-bot"
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                    />
+                    <p className="text-[11px] text-zinc-400">我们将基于此名称在审计日志中标记告警来源。</p>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-8 border-t border-zinc-100 flex justify-between">
-              <button 
-                onClick={prevStep}
-                className="px-6 py-3 border border-zinc-200 text-zinc-600 rounded-lg text-[14px] font-bold hover:bg-zinc-50 transition-all font-mono"
-              >
-                ← 上一步
-              </button>
-              <button 
-                onClick={nextStep}
-                className="group flex items-center gap-2 px-8 py-3 bg-zinc-900 text-white rounded-lg text-[14px] font-bold hover:bg-zinc-800 transition-all shadow-lg"
-              >
-                已完成接入，去验证联通性 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="p-10 flex-1 flex flex-col animate-in slide-in-from-right-4 duration-300">
-            <h2 className="text-lg font-bold text-zinc-900 mb-6 flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-zinc-900 rounded-full" /> 联通性自检
-            </h2>
-
-            <p className="text-[13px] text-zinc-500 mb-8 border-l-2 border-indigo-200 pl-4">
-              启动您的 Agent 进程后，点击下方的按钮。平台将向 SDK 发送探测信号并验证环境状态。
-            </p>
-
-            <div className="grid grid-cols-1 divide-y divide-zinc-100 border border-zinc-100 rounded-xl bg-zinc-50/30 overflow-hidden flex-1 mb-8">
-              {checkStatus.length === 0 && !isChecking && (
-                <div className="p-12 flex flex-col items-center justify-center text-zinc-400 space-y-4">
-                  <Terminal size={40} strokeWidth={1} />
-                  <p className="text-[13px]">等待执行探测程序...</p>
-                </div>
-              )}
-              {isChecking || checkStatus.length > 0 ? (
-                checkStatus.map((c, i) => (
-                  <div key={i} className="px-6 py-4 flex items-center justify-between group hover:bg-white transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${c.status === 'success' ? 'bg-emerald-500 shadow-sm shadow-emerald-200' : 'bg-zinc-300'}`} />
-                      <span className="text-[13px] font-medium text-zinc-800">{c.label}</span>
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">防护模式</label>
+                    <div className="grid grid-cols-2 gap-3">
+                       <button 
+                         onClick={() => setFormData({...formData, mode: 'warn'})}
+                         className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'warn' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
+                       >
+                         <div className="font-bold text-[14px] mb-1">Warn</div>
+                         <div className="text-[10px] opacity-70 leading-tight">仅记录告警，不拦截业务，适合初次接入。</div>
+                       </button>
+                       <button 
+                         onClick={() => setFormData({...formData, mode: 'block'})}
+                         className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'block' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
+                       >
+                         <div className="font-bold text-[14px] mb-1">Block</div>
+                         <div className="text-[10px] opacity-70 leading-tight">高风险操作直接拦截，强安全策略模式。</div>
+                       </button>
                     </div>
-                    <span className={`text-[12px] ${c.status === 'success' ? 'text-emerald-600 font-bold' : 'text-zinc-400'}`}>
-                      {c.result}
-                    </span>
                   </div>
-                ))
-              ) : null}
-            </div>
+                </div>
 
-            <div className="flex gap-4 items-center">
-              <button 
-                onClick={runCheck}
-                disabled={isChecking}
-                className="px-8 py-3 bg-zinc-900 text-white rounded-lg text-[14px] font-bold hover:bg-zinc-800 transition-all shadow-lg disabled:opacity-50"
-              >
-                {isChecking ? '正在探测中...' : '开始联通性检测'}
-              </button>
-              <span className={`text-[12px] font-medium ${checkResult.includes('检查通过') ? 'text-emerald-600' : 'text-zinc-400'}`}>
-                {checkResult}
-              </span>
-            </div>
-          </div>
-        )}
+                <div className="space-y-8">
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">所属业务线</label>
+                    <select 
+                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-4 text-[14px] font-medium focus:outline-none transition-all outline-none appearance-none cursor-pointer"
+                      value={formData.businessLine}
+                      onChange={e => setFormData({...formData, businessLine: e.target.value})}
+                    >
+                      <option value="">请选择业务板块</option>
+                      <option value="HR">HR & Admin 人力资源</option>
+                      <option value="Finance">Finance & Tax 财务</option>
+                      <option value="CS">Consumer Service 核心客服</option>
+                      <option value="Core">Core Systems 核心业务系统</option>
+                    </select>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">负责人</label>
+                    <input 
+                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-4 text-[14px] font-medium focus:outline-none transition-all outline-none"
+                      placeholder="姓名或系统邮箱"
+                      value={formData.owner}
+                      onChange={e => setFormData({...formData, owner: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
 
-        {step === 4 && (
-          <div className="p-10 flex-1 flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500">
-            <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mb-8 relative">
-              <div className="absolute inset-0 rounded-full bg-emerald-100/50 animate-ping" />
-              <CheckCircle2 size={48} className="text-emerald-600 relative z-10" />
+              <div className="mt-auto pt-10 border-t border-zinc-50 flex justify-end">
+                <button 
+                  onClick={nextStep}
+                  disabled={!formData.name || !formData.businessLine}
+                  className="group flex items-center gap-3 px-10 py-4 bg-zinc-900 text-white rounded-xl text-[15px] font-black hover:bg-zinc-800 transition-all disabled:opacity-20 disabled:grayscale shadow-xl shadow-zinc-900/10"
+                >
+                  生成一键安装脚本 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-zinc-900 mb-3">{formData.name} 接入成功</h2>
-            <p className="text-zinc-500 text-[14px] max-w-[400px] mb-10">
-              资产已自动入库并开启实时防护。您可以前往 Agent 清单查看其安全动态。
-            </p>
+          )}
 
-            <div className="flex gap-4">
-              <button 
-                onClick={() => window.location.href='/agents'} // Simple mock navigation
-                className="px-8 py-3 bg-zinc-900 text-white rounded-lg text-[14px] font-bold hover:bg-zinc-800 transition-all shadow-xl shadow-zinc-200"
-              >
-                查看资产清单 →
-              </button>
-              <button 
-                onClick={() => { setStep(1); setCheckStatus([]); }}
-                className="px-8 py-3 border border-zinc-200 text-zinc-600 rounded-lg text-[14px] font-bold hover:bg-zinc-50 transition-all"
-              >
-                返回向导首页
-              </button>
+          {step === 2 && (
+            <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
+              <div className="flex justify-between items-start mb-10">
+                 <div>
+                    <h2 className="text-3xl font-black text-zinc-900 tracking-tight mb-2">获取接入指令</h2>
+                    <p className="text-zinc-500 text-[15px]">SSH 登录您的业务主机 (B Server)，复制并粘贴执行下方命令。</p>
+                 </div>
+                 <div className="p-3 bg-zinc-900 rounded-xl text-white">
+                    <Cpu size={24} />
+                 </div>
+              </div>
+
+              <div className="space-y-8 flex-1">
+                <div className="bg-zinc-900 rounded-3xl p-1 shadow-2xl shadow-zinc-900/20">
+                  <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-800">
+                    <div className="flex items-center gap-4">
+                       <div className="flex gap-1.5">
+                          <div className="w-3 h-3 rounded-full bg-red-500/30" />
+                          <div className="w-3 h-3 rounded-full bg-amber-500/30" />
+                          <div className="w-3 h-3 rounded-full bg-emerald-500/30" />
+                       </div>
+                       <span className="text-[11px] font-mono font-black text-zinc-500 uppercase tracking-widest pl-4">Exclusive Onboard Script</span>
+                    </div>
+                    <button 
+                      onClick={() => handleCopy(installCmd, 'mainCmd')}
+                      className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[12px] font-black transition-all border-2 border-transparent ${copiedId === 'mainCmd' ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                    >
+                      {copiedId === 'mainCmd' ? <>已复制到剪贴板 <CheckCircle2 size={14} /></> : <>复制命令 <Copy size={14} /></>}
+                    </button>
+                  </div>
+                  <div className="p-8 font-mono text-[14px] overflow-x-auto text-zinc-300 leading-relaxed whitespace-pre bg-zinc-950/50 rounded-b-3xl">
+                    <span className="text-zinc-600 select-none mr-4">$</span>
+                    <span className="text-emerald-400">curl</span> -sSL <span className="text-purple-400 italic">"{backendUrl}/api/install.sh?token={token.slice(0, 10)}..."</span> | <span className="text-emerald-400 font-bold">bash</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                   <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-200 flex items-center justify-center text-zinc-600 mb-4 font-mono font-bold text-xs ring-4 ring-white shadow-sm">01</div>
+                      <h4 className="text-[13px] font-black mb-2 text-zinc-900">自动离线分发</h4>
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">脚本会自动从控制台下载 SDK 离线包 (.whl) 并本地安装，无需访问 GitHub 或外部网络。</p>
+                   </div>
+                   <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-200 flex items-center justify-center text-zinc-600 mb-4 font-mono font-bold text-xs ring-4 ring-white shadow-sm">02</div>
+                      <h4 className="text-[13px] font-black mb-2 text-zinc-900">环境自适应</h4>
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">自动完成环境变量注入 (AGENTSEC_API_URL)，确保业务端能正确找到“大脑”地址。</p>
+                   </div>
+                   <div className="p-6 bg-zinc-100 rounded-2xl border-2 border-zinc-900 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-12 h-12 bg-zinc-900 rotate-45 transform translate-x-6 -translate-y-6 flex items-end justify-center pb-1">
+                         <Zap size={14} className="text-white -rotate-45" />
+                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-white mb-4 font-mono font-bold text-xs shadow-lg">03</div>
+                      <h4 className="text-[13px] font-black mb-2 text-zinc-900">预检激活</h4>
+                      <p className="text-[11px] text-zinc-600 leading-relaxed">脚本将自动模拟一次拦截请求，通过 A-B 双向验证网络通畅后才会正式上线。</p>
+                   </div>
+                </div>
+              </div>
+
+              <div className="mt-auto pt-10 border-t border-zinc-50 flex justify-between items-center">
+                <button onClick={prevStep} className="px-6 py-4 text-[14px] font-bold text-zinc-400 hover:text-zinc-600 transition-all font-mono">← BACK</button>
+                <div className="flex items-center gap-2 text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50 px-4 py-2 rounded-lg">
+                   <Activity size={14} className="animate-pulse" /> Listening for heartbeats...
+                </div>
+                <button 
+                  onClick={nextStep}
+                  className="group flex items-center gap-3 px-10 py-4 bg-zinc-900 text-white rounded-xl text-[15px] font-black hover:bg-zinc-800 transition-all shadow-xl"
+                >
+                  我已在 B 主机执行命令 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {step === 3 && (
+            <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
+              <div className="mb-10 text-center">
+                 <h2 className="text-3xl font-black text-zinc-900 tracking-tight mb-2">正在等待 B 主机上线</h2>
+                 <p className="text-zinc-500 text-[15px]">安装脚本正在业务服务器上运行，进度将通过加密通道实时回传...</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto w-full flex-1">
+                 <StatusItem id="1" label="SDK 离线分发状态" icon={Monitor} />
+                 <StatusItem id="2" label="环境配置与隔离" icon={Info} />
+                 <StatusItem id="3" label="B 机器 -> 控制台连通性" icon={Activity} />
+                 <StatusItem id="4" label="动态拦截逻辑自检" icon={Zap} />
+                 <StatusItem id="5" label="生产级心跳握手注册" icon={Shield} />
+              </div>
+
+              <div className="mt-10 p-8 bg-zinc-900 rounded-3xl flex items-center justify-between text-white shadow-2xl shadow-zinc-900/30 overflow-hidden relative">
+                 <div className="absolute -left-4 -bottom-4 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
+                 <div className="relative z-10 flex items-center gap-6">
+                    <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
+                       <div className="w-8 h-8 rounded-full border-4 border-white border-t-transparent animate-spin" />
+                    </div>
+                    <div>
+                       <h4 className="text-[13px] font-black uppercase tracking-widest opacity-60 mb-1">Status Report</h4>
+                       <p className="text-xl font-bold tracking-tight">
+                         {onboardStatus.is_finished ? '✅ Agent 已完成线上接入' : '⏳ 正在等待探头 (SDK) 回传信号...'}
+                       </p>
+                    </div>
+                 </div>
+                 <div className="relative z-10 hidden lg:block">
+                    <div className="text-[10px] font-mono text-zinc-500 mb-2">CONSOLE UUID: {token.slice(0, 8)}...</div>
+                    <div className="flex gap-1 justify-end">
+                       {[0, 1, 2, 3, 4].map(i => <div key={i} className={`h-1 rounded-full transition-all duration-500 ${onboardStatus.current_step > i ? 'w-6 bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'w-2 bg-zinc-700'}`} />)}
+                    </div>
+                 </div>
+              </div>
+
+              <div className="mt-10 pt-4 border-t border-zinc-50 flex justify-center">
+                 <button onClick={() => setStep(2)} className="text-[12px] font-bold text-zinc-400 hover:text-zinc-600 flex items-center gap-2 px-6 py-2 rounded-xl transition-all">
+                    如果长时间没有进度，点击查看命令确认执行情况 <ChevronRight size={14} />
+                 </button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="p-12 flex-1 flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-700">
+              <div className="w-32 h-32 rounded-[40px] bg-emerald-500 shadow-2xl shadow-emerald-500/40 flex items-center justify-center mb-10 relative overflow-hidden group">
+                <div className="absolute inset-x-0 bottom-0 h-0 bg-emerald-600 transition-all duration-700 group-hover:h-full" />
+                <CheckCircle2 size={64} className="text-white relative z-10 animate-in zoom-in-50 duration-500" />
+                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+              </div>
+              
+              <div className="mb-12">
+                <h2 className="text-4xl font-black text-zinc-900 tracking-tighter mb-4 italic uppercase">{formData.name} <span className="text-emerald-500">Securely Armed!</span></h2>
+                <div className="flex items-center justify-center gap-6">
+                   <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 text-[12px] font-black text-emerald-700 uppercase tracking-widest">
+                      <Zap size={12} /> Active Protection
+                   </div>
+                   <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 rounded-full border border-indigo-100 text-[12px] font-black text-indigo-700 uppercase tracking-widest">
+                      <Shield size={12} /> Encrypted Channel
+                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 w-full max-w-2xl px-8">
+                <button 
+                  onClick={() => window.location.href='/agents'} 
+                  className="flex items-center justify-center gap-3 px-8 py-5 bg-zinc-900 text-white rounded-2xl text-[16px] font-black hover:bg-zinc-800 transition-all shadow-2xl shadow-zinc-900/20 translate-y-0 hover:-translate-y-1 active:translate-y-0"
+                >
+                  进入资产大盘查看 <Monitor size={20} />
+                </button>
+                <button 
+                  onClick={() => { setStep(1); setOnboardStatus({ current_step: 0, steps: {}, is_finished: false }); }}
+                  className="flex items-center justify-center gap-3 px-8 py-5 border-2 border-zinc-100 bg-white text-zinc-900 rounded-2xl text-[16px] font-black hover:border-zinc-200 hover:bg-zinc-50 transition-all"
+                >
+                  继续接入下一个 Agent <RefreshCw size={20} />
+                </button>
+              </div>
+              
+              <p className="mt-12 text-[11px] font-mono font-bold text-zinc-300 uppercase tracking-[0.3em]">Precision Protection for Autonomous Intelligence</p>
+            </div>
+          )}
+        </div>
+
+        <footer className="mt-10 px-6 flex flex-col md:flex-row items-center justify-between text-zinc-400 font-bold uppercase tracking-widest text-[10px]">
+           <div className="flex items-center gap-6 mb-4 md:mb-0">
+              <span className="flex items-center gap-2 opacity-50"><Shield size={12}/> Air-Gapped Ready</span>
+              <span className="flex items-center gap-2 opacity-50"><Activity size={12}/> 15s Heartbeat Polling</span>
+           </div>
+           <div className="opacity-30 select-none">AgentSec Architecture © 2026</div>
+        </footer>
       </div>
-
-      {showGuide && <DeploymentGuide />}
-
-      <footer className="mt-12 text-center text-[12px] text-zinc-400 flex items-center justify-center gap-6">
-        <div className="flex items-center gap-1.5"><Shield size={12}/> 支持全离线环境部署</div>
-        <div className="flex items-center gap-1.5"><Zap size={12}/> 核心逻辑零网络依赖</div>
-      </footer>
     </div>
   );
 }
