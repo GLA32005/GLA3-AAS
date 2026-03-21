@@ -10,6 +10,7 @@ __author__ = "AgentSec Community"
 from .config import config
 from .integrations.langchain import AgentSecurityCallback
 from .scanner.static_scanner import scan_tools
+from .async_tasks.onnx_runner import onnx_runner # 确保后台处理器就绪
 
 __all__ = [
     "config",
