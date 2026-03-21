@@ -34,6 +34,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         self, 
         mode: str = "warn", 
         agent_name: str = "anonymous-agent",
+        agent_token: str = "unauthorized",
         business_line: str = "default",
         owner: str = "admin",
         console_url: str = "http://127.0.0.1:8000",
@@ -43,6 +44,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         初始化 AgentSecurityCallback
         :param mode: "warn" 仅告警放行; "block" 替换内容为安全拦截语。
         :param agent_name: Agent 唯一标识名称
+        :param agent_token: Agent 认证令牌
         :param business_line: 所属业务线
         :param owner: 负责人
         :param console_url: 控制台后端 API 地址
@@ -50,6 +52,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         """
         self.mode = mode.lower()
         self.agent_name = agent_name
+        self.agent_token = agent_token
         self.business_line = business_line
         self.owner = owner
         self.console_url = console_url.rstrip("/")
@@ -79,6 +82,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
             import requests
             payload = {
                 "name": self.agent_name,
+                "token": self.agent_token,
                 "business_line": self.business_line,
                 "owner": self.owner,
                 "status": "online",
