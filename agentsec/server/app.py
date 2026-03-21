@@ -73,6 +73,9 @@ class OnboardPingRequest(BaseModel):
     step_id: int # 1: download, 2: env_setup, 3: network, 4: static_scan, 5: heartbeat
     status: str # success, running, fail
     message: str = ""
+    agent_name: str = "Unnamed"
+    biz_line: str = "CS"
+    owner: str = "agentsec-user"
 
 # ----------- AUTHENTICATION & RBAC -----------
 security = HTTPBearer()
@@ -497,6 +500,25 @@ async def onboard_ping(req: OnboardPingRequest):
     
     if req.step_id == 5 and req.status == "success":
         status_data["is_finished"] = True
+        # 自动在数据库中注册/更新 Agent 资产
+        async with engine.begin() as conn:
+             from sqlalchemy.dialects.postgresql import insert
+             stmt = insert(models.Agent).values(
+                 name=req.agent_name,
+                 biz_line=req.biz_line,
+                 owner=req.owner,
+                 sdk_status="online",
+                 last_seen=datetime.utcnow()
+             ).on_conflict_do_update(
+                 index_elements=["name"],
+                 set_={
+                     "biz_line": req.biz_line,
+                     "owner": req.owner,
+                     "sdk_status": "online",
+                     "last_seen": datetime.utcnow()
+                 }
+             )
+             await conn.execute(stmt)
         
     await redis_client.set_session(key, status_data, expire=3600)
     return {"status": "ok"}
@@ -511,7 +533,7 @@ async def get_onboard_status(token: str):
     return data
 
 @app.get("/api/install.sh")
-async def download_install_sh(request: Request, token: str = "default", agent_name: str = "remote-agent"):
+async def download_install_sh(request: Request, token: str = "default", agent_name: str = "remote-agent", biz_line: str = "CS", owner: str = "agentsec-user"):
     """下发动态脚本"""
     host_url = str(request.base_url).rstrip("/")
     if "localhost" in host_url:
@@ -525,42 +547,46 @@ async def download_install_sh(request: Request, token: str = "default", agent_na
 CONSOLE_URL="{host_url}"
 TOKEN="{token}"
 AGENT_NAME="{agent_name}"
+BIZ_LINE="{biz_line}"
+OWNER="{owner}"
 
 echo "🚀 Starting AgentSec SDK Onboarding..."
 
 # 1. 下载 SDK
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":1,\\"status\\":\\"running\\",\\"message\\":\\"正在从控制台拉取离线包 (.whl)...\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":1,\\"status\\":\\"running\\",\\"message\\":\\"正在从控制台拉取离线包 (.whl)...\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 curl -s -O $CONSOLE_URL/api/sdk/agentsec.whl
 if [ $? -eq 0 ]; then
-    curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":1,\\"status\\":\\"success\\",\\"message\\":\\"SDK 下载完成 (1.2MB)\\"}}"
+    curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":1,\\"status\\":\\"success\\",\\"message\\":\\"SDK 下载完成 (1.2MB)\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 else
-    curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":1,\\"status\\":\\"fail\\",\\"message\\":\\"SDK 下载失败，请检查网络\\"}}"
+    curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":1,\\"status\\":\\"fail\\",\\"message\\":\\"SDK 下载失败，请检查网络\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
     exit 1
 fi
 
 # 2. 环境配置
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":2,\\"status\\":\\"running\\",\\"message\\":\\"正在配置虚拟环境与环境变量...\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":2,\\"status\\":\\"running\\",\\"message\\":\\"正在配置虚拟环境与环境变量...\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 # 模拟安装
 # python3 -m venv venv && source venv/bin/activate && pip install agentsec.whl
 export AGENTSEC_API_URL="$CONSOLE_URL"
 echo "export AGENTSEC_API_URL=$CONSOLE_URL" >> ~/.bashrc
+echo "export AGENTSEC_AGENT_NAME=$AGENT_NAME" >> ~/.bashrc
+echo "export AGENTSEC_BIZ_LINE=$BIZ_LINE" >> ~/.bashrc
 sleep 1
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":2,\\"status\\":\\"success\\",\\"message\\":\\"环境初始化完成 (.bashrc 已更新)\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":2,\\"status\\":\\"success\\",\\"message\\":\\"环境初始化完成 (.bashrc 已同步)\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 
 # 3. 连通性测试
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":3,\\"status\\":\\"running\\",\\"message\\":\\"探测 B 机器 -> Host A 连通性...\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":3,\\"status\\":\\"running\\",\\"message\\":\\"正在探测 B 机器 -> Host A 连通性...\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 RTT=$(curl -o /dev/null -s -w "%{{time_total}}\\" $CONSOLE_URL/health)
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":3,\\"status\\":\\"success\\",\\"message\\":\\"连通性正常 (RTT: ${{RTT}}s)\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":3,\\"status\\":\\"success\\",\\"message\\":\\"连通性正常 (RTT: ${{RTT}}s)\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 
 # 4. 静态扫描自检
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":4,\\"status\\":\\"running\\",\\"message\\":\\"正在执行逻辑自检与漏洞模拟...\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":4,\\"status\\":\\"running\\",\\"message\\":\\"正在执行逻辑自检与漏洞模拟...\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 sleep 1
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":4,\\"status\\":\\"success\\",\\"message\\":\\"自检通过 (无高危配置)\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":4,\\"status\\":\\"success\\",\\"message\\":\\"自检通过 (无高危配置)\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 
 # 5. 最终心跳注册
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":5,\\"status\\":\\"running\\",\\"message\\":\\"正在进行最终心跳握手...\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":5,\\"status\\":\\"running\\",\\"message\\":\\"Agent: $AGENT_NAME ($BIZ_LINE) 正在注册心跳握手...\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 sleep 1
-curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":5,\\"status\\":\\"success\\",\\"message\\":\\"Agent 已在线！注册成功\\"}}"
+curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":5,\\"status\\":\\"success\\",\\"message\\":\\"负责人: $OWNER | 状态: 激活并上线 ✓\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 
 echo "✨ All components installed. Your Agent is now protected by AgentSec."
 """
