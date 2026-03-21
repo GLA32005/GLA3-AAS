@@ -308,21 +308,12 @@ agent_executor.run(
                     {copiedId === 'pip' ? <span className="text-emerald-600 font-bold">已复制!</span> : '复制'}
                   </button>
                 </div>
-                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 font-mono text-sm leading-none">$</div>
-                    <code className="text-zinc-300 font-mono text-[13px]"># 方案 A: 本地开发测试 (在代码库目录下执行)</code>
-                  </div>
-                  <div className="flex items-center gap-3 ml-9">
-                    <code className="text-zinc-300 font-mono text-[13px]">pip install -e .</code>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2">
-                    <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 font-mono text-sm leading-none">$</div>
-                    <code className="text-zinc-300 font-mono text-[13px]"># 方案 B: 跨主机生产测试 (直接从 GitHub 安装)</code>
-                  </div>
-                  <div className="flex items-center gap-3 ml-9">
-                    <code className="text-zinc-300 font-mono text-[13px]">pip install git+https://github.com/GLA32005/GLA3-AAS.git</code>
-                  </div>
+                <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative font-mono text-[12px] leading-relaxed">
+                  <div className="text-zinc-500 italic mb-1"># 方案 A: 本地开发测试 (在代码库目录下执行)</div>
+                  <div className="text-zinc-300 mb-4">pip install -e .</div>
+                  
+                  <div className="text-zinc-500 italic mb-1"># 方案 B: 跨主机生产测试 (直接从 GitHub 安装)</div>
+                  <div className="text-zinc-300">pip install git+https://github.com/GLA32005/GLA3-AAS.git</div>
                 </div>
                 <p className="text-[10px] text-zinc-500 italic">注：Host B 跨主机安装请优先选择方案 B。安装完成后请务必设置 AGENTSEC_API_URL 指向 Host A 的 IP。</p>
               </div>
