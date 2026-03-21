@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, func
+from sqlalchemy import select, update, delete, func, text
 from sqlalchemy.orm import selectinload
 
 from .database import get_db, engine
@@ -21,6 +21,17 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI(title="AgentSec Governance Console API", version="2.0")
+
+@app.on_event("startup")
+async def startup_event():
+    """确保数据库 Schema 同步补全 (解决 500 错误)"""
+    async with engine.begin() as conn:
+        try:
+            # 兼容旧版本数据库，自动补全新增字段
+            await conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS biz_line VARCHAR(100)"))
+            await conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS owner VARCHAR(100)"))
+        except Exception as e:
+            print(f"Startup DDL Patch skipped: {e}")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_onboard_page():
@@ -575,7 +586,7 @@ curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: applicati
 
 # 3. 连通性测试
 curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":3,\\"status\\":\\"running\\",\\"message\\":\\"正在探测 B 机器 -> Host A 连通性...\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
-RTT=$(curl -o /dev/null -s -w "%{{time_total}}\\" $CONSOLE_URL/health)
+RTT=$(curl -o /dev/null -s -w "%{{time_total}}" $CONSOLE_URL/health)
 curl -s -X POST $CONSOLE_URL/api/agents/onboard-ping -H "Content-Type: application/json" -d "{{\\"token\\":\\"$TOKEN\\",\\"step_id\\":3,\\"status\\":\\"success\\",\\"message\\":\\"连通性正常 (RTT: ${{RTT}}s)\\",\\"agent_name\\":\\"$AGENT_NAME\\",\\"biz_line\\":\\"$BIZ_LINE\\",\\"owner\\":\\"$OWNER\\"}}"
 
 # 4. 静态扫描自检
