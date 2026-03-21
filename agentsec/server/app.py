@@ -289,6 +289,46 @@ async def register_agent(req: AgentRegisterRequest, db: AsyncSession = Depends(g
     print(f"[Backend] Persistent Registered Agent: {req.name}")
     return {"status": "success", "message": f"Agent {req.name} registered"}
 
+@app.get("/api/agents")
+async def get_agents(db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
+    """获取所有受保护的 Agent 列表"""
+    result = await db.execute(select(models.Agent).order_by(models.Agent.last_seen.desc()))
+    agents = []
+    for a in result.scalars():
+        agents.append({
+            "id": str(a.id),
+            "name": a.name,
+            "framework": a.framework,
+            "mode": a.mode,
+            "health_score": 100 - a.risk_score,
+            "today_blocks": 0,
+            "permission_status": "Normal",
+            "business_line": a.biz_line,
+            "owner": a.owner
+        })
+    return {"agents": agents}
+
+@app.get("/api/alerts")
+async def get_alerts_list(db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
+    """获取历史告警记录列表"""
+    result = await db.execute(
+        select(models.Alert)
+        .options(selectinload(models.Alert.agent))
+        .order_by(models.Alert.created_at.desc())
+        .limit(100)
+    )
+    alerts = []
+    for a in result.scalars():
+        alerts.append({
+            "id": str(a.id),
+            "level": a.severity.capitalize(),
+            "time": a.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "agent": a.agent.name if a.agent else "Unknown",
+            "hook_point": a.hook_point,
+            "title": a.title
+        })
+    return {"alerts": alerts}
+
 @app.post("/api/settings/push")
 def update_push_settings(req: PushConfig, current_user: UserContext = Depends(require_admin)):
     """更新告警推送配置 (仅限管理员)"""
