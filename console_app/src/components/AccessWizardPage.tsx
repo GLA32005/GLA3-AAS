@@ -173,8 +173,8 @@ export function AccessWizardPage() {
           {step === 1 && (
             <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
               <div className="mb-10">
-                <h2 className="text-3xl font-black text-zinc-900 tracking-tight mb-2">配置您的资产身份</h2>
-                <p className="text-zinc-500 text-[15px]">填写 Agent 基本信息，向导将自动生成包含预检逻辑的一键安装脚本。</p>
+                <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-2">配置您的资产身份</h2>
+                <p className="text-zinc-500 text-[13px]">填写 Agent 基本信息，向导将自动生成包含预检逻辑的一键安装脚本。</p>
               </div>
 
               <div className="grid grid-cols-2 gap-10 flex-1">
@@ -182,7 +182,7 @@ export function AccessWizardPage() {
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">Agent 名称</label>
                     <input 
-                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-4 text-[14px] font-medium focus:outline-none focus:border-zinc-900 focus:ring-4 focus:ring-zinc-900/5 transition-all outline-none"
+                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-3.5 text-[13px] font-medium focus:outline-none focus:border-zinc-900 focus:ring-4 focus:ring-zinc-900/5 transition-all outline-none"
                       placeholder="例如: cs-assistant-bot"
                       value={formData.name}
                       onChange={e => setFormData({...formData, name: e.target.value})}
@@ -196,14 +196,14 @@ export function AccessWizardPage() {
                          onClick={() => setFormData({...formData, mode: 'warn'})}
                          className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'warn' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
                        >
-                         <div className="font-bold text-[14px] mb-1">Warn</div>
+                         <div className="font-bold text-[13px] mb-1">Warn</div>
                          <div className="text-[10px] opacity-70 leading-tight">仅记录告警，不拦截业务，适合初次接入。</div>
                        </button>
                        <button 
                          onClick={() => setFormData({...formData, mode: 'block'})}
                          className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'block' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
                        >
-                         <div className="font-bold text-[14px] mb-1">Block</div>
+                         <div className="font-bold text-[13px] mb-1">Block</div>
                          <div className="text-[10px] opacity-70 leading-tight">高风险操作直接拦截，强安全策略模式。</div>
                        </button>
                     </div>
@@ -214,7 +214,7 @@ export function AccessWizardPage() {
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">所属业务线</label>
                     <select 
-                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-4 text-[14px] font-medium focus:outline-none transition-all outline-none appearance-none cursor-pointer"
+                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-3.5 text-[13px] font-medium focus:outline-none transition-all outline-none appearance-none cursor-pointer"
                       value={formData.businessLine}
                       onChange={e => setFormData({...formData, businessLine: e.target.value})}
                     >
@@ -228,7 +228,7 @@ export function AccessWizardPage() {
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">负责人</label>
                     <input 
-                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-4 text-[14px] font-medium focus:outline-none transition-all outline-none"
+                      className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-3.5 text-[13px] font-medium focus:outline-none transition-all outline-none"
                       placeholder="姓名或系统邮箱"
                       value={formData.owner}
                       onChange={e => setFormData({...formData, owner: e.target.value})}
@@ -253,8 +253,8 @@ export function AccessWizardPage() {
             <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
               <div className="flex justify-between items-start mb-10">
                  <div>
-                    <h2 className="text-3xl font-black text-zinc-900 tracking-tight mb-2">获取接入指令</h2>
-                    <p className="text-zinc-500 text-[15px]">SSH 登录您的业务主机 (B Server)，复制并粘贴执行下方命令。</p>
+                    <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-2">获取接入指令</h2>
+                    <p className="text-zinc-500 text-[13px]">SSH 登录您的业务主机 (B Server)，复制并粘贴执行下方命令。</p>
                  </div>
                  <div className="p-3 bg-zinc-900 rounded-xl text-white">
                     <Cpu size={24} />
@@ -325,8 +325,8 @@ export function AccessWizardPage() {
           {step === 3 && (
             <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
               <div className="mb-10 text-center">
-                 <h2 className="text-3xl font-black text-zinc-900 tracking-tight mb-2">正在等待 B 主机上线</h2>
-                 <p className="text-zinc-500 text-[15px]">安装脚本正在业务服务器上运行，进度将通过加密通道实时回传...</p>
+                 <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-2">正在等待信号回传</h2>
+                 <p className="text-zinc-500 text-[13px]">安装脚本正在业务服务器上运行，进度将通过加密通道实时反馈...</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto w-full flex-1">
