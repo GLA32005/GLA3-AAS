@@ -299,19 +299,26 @@ agent_executor.run(
             <div className="space-y-6 flex-1">
               <div className="space-y-3">
                 <div className="flex justify-between items-end">
-                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">命令行：安装 SDK</label>
+                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">命令行：安装 SDK (推荐使用虚拟环境)</label>
                   <button 
-                    onClick={() => handleCopy("pip install agentsec", 'pip')}
+                    onClick={() => handleCopy("python3 -m venv venv && source venv/bin/activate && pip install agentsec", 'pip')}
                     className="text-[10px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors"
                   >
                     {copiedId === 'pip' ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12}/>}
                     {copiedId === 'pip' ? <span className="text-emerald-600 font-bold">已复制!</span> : '复制'}
                   </button>
                 </div>
-                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center gap-3">
-                  <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 font-mono text-sm leading-none">$</div>
-                  <code className="text-zinc-300 font-mono text-[13px]">pip install agentsec</code>
+                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 font-mono text-sm leading-none">$</div>
+                    <code className="text-zinc-300 font-mono text-[13px]">python3 -m venv venv && source venv/bin/activate</code>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 font-mono text-sm leading-none">$</div>
+                    <code className="text-zinc-300 font-mono text-[13px]">pip install agentsec</code>
+                  </div>
                 </div>
+                <p className="text-[10px] text-zinc-500 italic">注：在 Ubuntu 23.04+ 等现代系统中，直接使用 pip 可能会受 PEP 668 限制，建议优先使用上面的 venv 方案。</p>
               </div>
 
               <div className="space-y-3">
