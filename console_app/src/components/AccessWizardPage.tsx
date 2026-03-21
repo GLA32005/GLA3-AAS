@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { 
-  CheckCircle2, 
-  ArrowRight, 
-  Copy, 
-  Terminal, 
-  Shield, 
-  Zap, 
-  Server, 
-  Info, 
+import {
+  CheckCircle2,
+  ArrowRight,
+  Copy,
+  Terminal,
+  Shield,
+  Zap,
+  Server,
+  Info,
   AlertCircle,
   X,
   RefreshCw,
@@ -30,9 +30,9 @@ const StepIndicator = ({ active, done, index, label }: StepProps) => (
   <div className="flex items-center flex-1 group">
     <div className={`
       w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-mono tabular-nums border-2 transition-all duration-700
-      ${active ? 'bg-zinc-900 border-zinc-900 text-white scale-110 shadow-[0_0_20px_rgba(0,0,0,0.1)]' : 
-        done ? 'bg-emerald-500 border-emerald-500 text-white' : 
-        'bg-white border-zinc-200 text-zinc-400'}
+      ${active ? 'bg-zinc-900 border-zinc-900 text-white scale-110 shadow-[0_0_20px_rgba(0,0,0,0.1)]' :
+        done ? 'bg-emerald-500 border-emerald-500 text-white' :
+          'bg-white border-zinc-200 text-zinc-400'}
     `}>
       {done ? <CheckCircle2 size={18} /> : index}
     </div>
@@ -171,7 +171,7 @@ export function AccessWizardPage() {
         <div className="bg-white border border-zinc-200/60 rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] overflow-hidden min-h-[580px] flex flex-col relative ring-1 ring-zinc-900/5">
           {/* Progress Overlays */}
           <div className="absolute top-0 left-0 w-full h-[3px] bg-zinc-100/50">
-             <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(16,185,129,0.5)]" style={{ width: `${(step/4)*100}%` }} />
+            <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(16,185,129,0.5)]" style={{ width: `${(step / 4) * 100}%` }} />
           </div>
 
           {step === 1 && (
@@ -185,31 +185,31 @@ export function AccessWizardPage() {
                 <div className="space-y-8">
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">Agent 名称</label>
-                    <input 
+                    <input
                       className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-3.5 text-[13px] font-medium focus:outline-none focus:border-zinc-900 focus:ring-4 focus:ring-zinc-900/5 transition-all outline-none"
                       placeholder="例如: cs-assistant-bot"
                       value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
                     />
                     <p className="text-[11px] text-zinc-400">我们将基于此名称在审计日志中标记告警来源。</p>
                   </div>
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">防护模式</label>
                     <div className="grid grid-cols-2 gap-3">
-                       <button 
-                         onClick={() => setFormData({...formData, mode: 'warn'})}
-                         className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'warn' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
-                       >
-                         <div className="font-bold text-[13px] mb-1">Warn</div>
-                         <div className="text-[10px] opacity-70 leading-tight">仅记录告警，不拦截业务，适合初次接入。</div>
-                       </button>
-                       <button 
-                         onClick={() => setFormData({...formData, mode: 'block'})}
-                         className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'block' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
-                       >
-                         <div className="font-bold text-[13px] mb-1">Block</div>
-                         <div className="text-[10px] opacity-70 leading-tight">高风险操作直接拦截，强安全策略模式。</div>
-                       </button>
+                      <button
+                        onClick={() => setFormData({ ...formData, mode: 'warn' })}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'warn' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
+                      >
+                        <div className="font-bold text-[13px] mb-1">Warn</div>
+                        <div className="text-[10px] opacity-70 leading-tight">仅记录告警，不拦截业务，适合初次接入。</div>
+                      </button>
+                      <button
+                        onClick={() => setFormData({ ...formData, mode: 'block' })}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${formData.mode === 'block' ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
+                      >
+                        <div className="font-bold text-[13px] mb-1">Block</div>
+                        <div className="text-[10px] opacity-70 leading-tight">高风险操作直接拦截，强安全策略模式。</div>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -217,10 +217,10 @@ export function AccessWizardPage() {
                 <div className="space-y-8">
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">所属业务线</label>
-                    <select 
+                    <select
                       className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-3.5 text-[13px] font-medium focus:outline-none transition-all outline-none appearance-none cursor-pointer"
                       value={formData.businessLine}
-                      onChange={e => setFormData({...formData, businessLine: e.target.value})}
+                      onChange={e => setFormData({ ...formData, businessLine: e.target.value })}
                     >
                       <option value="">请选择业务板块</option>
                       <option value="HR">HR & Admin 人力资源</option>
@@ -231,23 +231,23 @@ export function AccessWizardPage() {
                   </div>
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">负责人</label>
-                    <input 
+                    <input
                       className="w-full bg-white border-2 border-zinc-100 rounded-xl px-4 py-3.5 text-[13px] font-medium focus:outline-none transition-all outline-none"
                       placeholder="姓名或系统邮箱"
                       value={formData.owner}
-                      onChange={e => setFormData({...formData, owner: e.target.value})}
+                      onChange={e => setFormData({ ...formData, owner: e.target.value })}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-auto pt-10 border-t border-zinc-50 flex justify-end">
-                <button 
+              <div className="mt-auto pt-8 border-t border-zinc-50 flex justify-end">
+                <button
                   onClick={nextStep}
                   disabled={!formData.name || !formData.businessLine}
-                  className="group flex items-center gap-3 px-10 py-4 bg-zinc-900 text-white rounded-xl text-[15px] font-black hover:bg-zinc-800 transition-all disabled:opacity-20 disabled:grayscale shadow-xl shadow-zinc-900/10"
+                  className="group flex items-center gap-2.5 px-6 py-2.5 bg-zinc-900 text-white rounded-xl text-[13px] font-bold hover:bg-zinc-800 transition-all disabled:opacity-20 disabled:grayscale shadow-lg shadow-zinc-900/10"
                 >
-                  生成一键安装脚本 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  生成一键安装脚本 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
@@ -256,27 +256,27 @@ export function AccessWizardPage() {
           {step === 2 && (
             <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
               <div className="flex justify-between items-start mb-10">
-                 <div>
-                    <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-2">获取接入指令</h2>
-                    <p className="text-zinc-500 text-[13px]">SSH 登录您的业务主机 (B Server)，复制并粘贴执行下方命令。</p>
-                 </div>
-                 <div className="p-3 bg-zinc-900 rounded-xl text-white">
-                    <Cpu size={24} />
-                 </div>
+                <div>
+                  <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-2">获取接入指令</h2>
+                  <p className="text-zinc-500 text-[13px]">SSH 登录您的业务主机 (B Server)，复制并粘贴执行下方命令。</p>
+                </div>
+                <div className="p-3 bg-zinc-900 rounded-xl text-white">
+                  <Cpu size={24} />
+                </div>
               </div>
 
               <div className="space-y-8 flex-1">
                 <div className="bg-zinc-950 rounded-[28px] p-1.5 shadow-2xl shadow-zinc-900/40 border border-zinc-800/50">
                   <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-900/50">
                     <div className="flex items-center gap-4">
-                       <div className="flex gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-red-400/20" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-amber-400/20" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/20" />
-                       </div>
-                       <span className="text-[10px] font-mono font-bold text-zinc-600 uppercase tracking-[0.3em] pl-4">Onboard Payload</span>
+                      <div className="flex gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-400/20" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400/20" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/20" />
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-zinc-600 uppercase tracking-[0.3em] pl-4">Onboard Payload</span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => handleCopy(installCmd, 'mainCmd')}
                       className={`flex items-center gap-2 px-5 py-2 rounded-xl text-[11px] font-bold transition-all duration-500 border ${copiedId === 'mainCmd' ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
@@ -290,37 +290,37 @@ export function AccessWizardPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-6">
-                   <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
-                      <div className="w-8 h-8 rounded-lg bg-zinc-200 flex items-center justify-center text-zinc-600 mb-4 font-mono font-bold text-xs ring-4 ring-white shadow-sm">01</div>
-                      <h4 className="text-[13px] font-black mb-2 text-zinc-900">自动离线分发</h4>
-                      <p className="text-[11px] text-zinc-500 leading-relaxed">脚本会自动从控制台下载 SDK 离线包 (.whl) 并本地安装，无需访问 GitHub 或外部网络。</p>
-                   </div>
-                   <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
-                      <div className="w-8 h-8 rounded-lg bg-zinc-200 flex items-center justify-center text-zinc-600 mb-4 font-mono font-bold text-xs ring-4 ring-white shadow-sm">02</div>
-                      <h4 className="text-[13px] font-black mb-2 text-zinc-900">环境自适应</h4>
-                      <p className="text-[11px] text-zinc-500 leading-relaxed">自动完成环境变量注入 (AGENTSEC_API_URL)，确保业务端能正确找到“大脑”地址。</p>
-                   </div>
-                   <div className="p-6 bg-zinc-100 rounded-2xl border-2 border-zinc-900 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-12 h-12 bg-zinc-900 rotate-45 transform translate-x-6 -translate-y-6 flex items-end justify-center pb-1">
-                         <Zap size={14} className="text-white -rotate-45" />
-                      </div>
-                      <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-white mb-4 font-mono font-bold text-xs shadow-lg">03</div>
-                      <h4 className="text-[13px] font-black mb-2 text-zinc-900">预检激活</h4>
-                      <p className="text-[11px] text-zinc-600 leading-relaxed">脚本将自动模拟一次拦截请求，通过 A-B 双向验证网络通畅后才会正式上线。</p>
-                   </div>
+                  <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-200 flex items-center justify-center text-zinc-600 mb-4 font-mono font-bold text-xs ring-4 ring-white shadow-sm">01</div>
+                    <h4 className="text-[13px] font-black mb-2 text-zinc-900">自动离线分发</h4>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">脚本会自动从控制台下载 SDK 离线包 (.whl) 并本地安装，无需访问 GitHub 或外部网络。</p>
+                  </div>
+                  <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-200 flex items-center justify-center text-zinc-600 mb-4 font-mono font-bold text-xs ring-4 ring-white shadow-sm">02</div>
+                    <h4 className="text-[13px] font-black mb-2 text-zinc-900">环境自适应</h4>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">自动完成环境变量注入 (AGENTSEC_API_URL)，确保业务端能正确找到“大脑”地址。</p>
+                  </div>
+                  <div className="p-6 bg-zinc-100 rounded-2xl border-2 border-zinc-900 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-12 h-12 bg-zinc-900 rotate-45 transform translate-x-6 -translate-y-6 flex items-end justify-center pb-1">
+                      <Zap size={14} className="text-white -rotate-45" />
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-white mb-4 font-mono font-bold text-xs shadow-lg">03</div>
+                    <h4 className="text-[13px] font-black mb-2 text-zinc-900">预检激活</h4>
+                    <p className="text-[11px] text-zinc-600 leading-relaxed">脚本将自动模拟一次拦截请求，通过 A-B 双向验证网络通畅后才会正式上线。</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-auto pt-10 border-t border-zinc-50 flex justify-between items-center">
-                <button onClick={prevStep} className="px-6 py-4 text-[14px] font-bold text-zinc-400 hover:text-zinc-600 transition-all font-mono">← BACK</button>
-                <div className="flex items-center gap-2 text-[11px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50 px-4 py-2 rounded-lg">
-                   <Activity size={14} className="animate-pulse" /> Listening for heartbeats...
+              <div className="mt-auto pt-8 border-t border-zinc-50 flex justify-between items-center">
+                <button onClick={prevStep} className="px-4 py-2 text-[12px] font-bold text-zinc-400 hover:text-zinc-600 transition-all font-mono">← BACK</button>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50 px-3 py-1.5 rounded-lg">
+                  <Activity size={12} className="animate-pulse" /> Listening...
                 </div>
-                <button 
+                <button
                   onClick={nextStep}
-                  className="group flex items-center gap-3 px-10 py-4 bg-zinc-900 text-white rounded-xl text-[15px] font-black hover:bg-zinc-800 transition-all shadow-xl"
+                  className="group flex items-center gap-2.5 px-6 py-2.5 bg-zinc-900 text-white rounded-xl text-[13px] font-bold hover:bg-zinc-800 transition-all shadow-lg"
                 >
-                  我已在 B 主机执行命令 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  我已在目标主机执行命令 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
@@ -329,43 +329,43 @@ export function AccessWizardPage() {
           {step === 3 && (
             <div className="p-12 flex-1 flex flex-col animate-in slide-in-from-right-8 duration-500">
               <div className="mb-10 text-center">
-                 <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-2">正在等待信号回传</h2>
-                 <p className="text-zinc-500 text-[13px]">安装脚本正在业务服务器上运行，进度将通过加密通道实时反馈...</p>
+                <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-2">正在等待信号回传</h2>
+                <p className="text-zinc-500 text-[13px]">安装脚本正在业务服务器上运行，进度将通过加密通道实时反馈...</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto w-full flex-1">
-                 <StatusItem id="1" label="SDK 离线分发状态" icon={Monitor} />
-                 <StatusItem id="2" label="环境配置与隔离" icon={Info} />
-                 <StatusItem id="3" label="B 机器 -> 控制台连通性" icon={Activity} />
-                 <StatusItem id="4" label="动态拦截逻辑自检" icon={Zap} />
-                 <StatusItem id="5" label="生产级心跳握手注册" icon={Shield} />
+                <StatusItem id="1" label="SDK 离线分发状态" icon={Monitor} />
+                <StatusItem id="2" label="环境配置与隔离" icon={Info} />
+                <StatusItem id="3" label="B 机器 -> 控制台连通性" icon={Activity} />
+                <StatusItem id="4" label="动态拦截逻辑自检" icon={Zap} />
+                <StatusItem id="5" label="生产级心跳握手注册" icon={Shield} />
               </div>
 
               <div className="mt-10 p-8 bg-zinc-900 rounded-3xl flex items-center justify-between text-white shadow-2xl shadow-zinc-900/30 overflow-hidden relative">
-                 <div className="absolute -left-4 -bottom-4 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
-                 <div className="relative z-10 flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
-                       <div className="w-8 h-8 rounded-full border-4 border-white border-t-transparent animate-spin" />
-                    </div>
-                    <div>
-                       <h4 className="text-[13px] font-black uppercase tracking-widest opacity-60 mb-1">Status Report</h4>
-                       <p className="text-xl font-bold tracking-tight">
-                         {onboardStatus.is_finished ? '✅ Agent 已完成线上接入' : '⏳ 正在等待探头 (SDK) 回传信号...'}
-                       </p>
-                    </div>
-                 </div>
-                 <div className="relative z-10 hidden lg:block">
-                    <div className="text-[10px] font-mono text-zinc-500 mb-2">CONSOLE UUID: {token.slice(0, 8)}...</div>
-                    <div className="flex gap-1 justify-end">
-                       {[0, 1, 2, 3, 4].map(i => <div key={i} className={`h-1 rounded-full transition-all duration-500 ${onboardStatus.current_step > i ? 'w-6 bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'w-2 bg-zinc-700'}`} />)}
-                    </div>
-                 </div>
+                <div className="absolute -left-4 -bottom-4 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
+                <div className="relative z-10 flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full border-4 border-white border-t-transparent animate-spin" />
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-black uppercase tracking-widest opacity-60 mb-1">Status Report</h4>
+                    <p className="text-xl font-bold tracking-tight">
+                      {onboardStatus.is_finished ? '✅ Agent 已完成线上接入' : '⏳ 正在等待探头 (SDK) 回传信号...'}
+                    </p>
+                  </div>
+                </div>
+                <div className="relative z-10 hidden lg:block">
+                  <div className="text-[10px] font-mono text-zinc-500 mb-2">CONSOLE UUID: {token.slice(0, 8)}...</div>
+                  <div className="flex gap-1 justify-end">
+                    {[0, 1, 2, 3, 4].map(i => <div key={i} className={`h-1 rounded-full transition-all duration-500 ${onboardStatus.current_step > i ? 'w-6 bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'w-2 bg-zinc-700'}`} />)}
+                  </div>
+                </div>
               </div>
 
               <div className="mt-10 pt-4 border-t border-zinc-50 flex justify-center">
-                 <button onClick={() => setStep(2)} className="text-[12px] font-bold text-zinc-400 hover:text-zinc-600 flex items-center gap-2 px-6 py-2 rounded-xl transition-all">
-                    如果长时间没有进度，点击查看命令确认执行情况 <ChevronRight size={14} />
-                 </button>
+                <button onClick={() => setStep(2)} className="text-[12px] font-bold text-zinc-400 hover:text-zinc-600 flex items-center gap-2 px-6 py-2 rounded-xl transition-all">
+                  如果长时间没有进度，点击查看命令确认执行情况 <ChevronRight size={14} />
+                </button>
               </div>
             </div>
           )}
@@ -377,45 +377,45 @@ export function AccessWizardPage() {
                 <CheckCircle2 size={64} className="text-white relative z-10 animate-in zoom-in-50 duration-500" />
                 <div className="absolute inset-0 bg-white/20 animate-pulse" />
               </div>
-              
+
               <div className="mb-12">
                 <h2 className="text-4xl font-black text-zinc-900 tracking-tighter mb-4 italic uppercase">{formData.name} <span className="text-emerald-500">Securely Armed!</span></h2>
                 <div className="flex items-center justify-center gap-6">
-                   <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 text-[12px] font-black text-emerald-700 uppercase tracking-widest">
-                      <Zap size={12} /> Active Protection
-                   </div>
-                   <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 rounded-full border border-indigo-100 text-[12px] font-black text-indigo-700 uppercase tracking-widest">
-                      <Shield size={12} /> Encrypted Channel
-                   </div>
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 text-[12px] font-black text-emerald-700 uppercase tracking-widest">
+                    <Zap size={12} /> Active Protection
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 rounded-full border border-indigo-100 text-[12px] font-black text-indigo-700 uppercase tracking-widest">
+                    <Shield size={12} /> Encrypted Channel
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 w-full max-w-2xl px-8">
-                <button 
-                  onClick={() => window.location.href='/agents'} 
-                  className="flex items-center justify-center gap-3 px-8 py-5 bg-zinc-900 text-white rounded-2xl text-[16px] font-black hover:bg-zinc-800 transition-all shadow-2xl shadow-zinc-900/20 translate-y-0 hover:-translate-y-1 active:translate-y-0"
+              <div className="grid grid-cols-2 gap-4 w-full max-w-lg px-8">
+                <button
+                  onClick={() => window.location.href = '/agents'}
+                  className="flex items-center justify-center gap-2.5 px-6 py-4 bg-zinc-900 text-white rounded-2xl text-[14px] font-bold hover:bg-zinc-800 transition-all shadow-xl shadow-zinc-900/20 translate-y-0 hover:-translate-y-1 active:translate-y-0"
                 >
-                  进入资产大盘查看 <Monitor size={20} />
+                  进入资产大盘查看 <Monitor size={18} />
                 </button>
-                <button 
+                <button
                   onClick={() => { setStep(1); setOnboardStatus({ current_step: 0, steps: {}, is_finished: false }); }}
-                  className="flex items-center justify-center gap-3 px-8 py-5 border-2 border-zinc-100 bg-white text-zinc-900 rounded-2xl text-[16px] font-black hover:border-zinc-200 hover:bg-zinc-50 transition-all"
+                  className="flex items-center justify-center gap-2.5 px-6 py-4 border-2 border-zinc-100 bg-white text-zinc-900 rounded-2xl text-[14px] font-bold hover:border-zinc-200 hover:bg-zinc-50 transition-all"
                 >
-                  继续接入下一个 Agent <RefreshCw size={20} />
+                  继续接入下一个 <RefreshCw size={18} />
                 </button>
               </div>
-              
+
               <p className="mt-12 text-[11px] font-mono font-bold text-zinc-300 uppercase tracking-[0.3em]">Precision Protection for Autonomous Intelligence</p>
             </div>
           )}
         </div>
 
         <footer className="mt-10 px-6 flex flex-col md:flex-row items-center justify-between text-zinc-400 font-bold uppercase tracking-widest text-[10px]">
-           <div className="flex items-center gap-6 mb-4 md:mb-0">
-              <span className="flex items-center gap-2 opacity-50"><Shield size={12}/> Air-Gapped Ready</span>
-              <span className="flex items-center gap-2 opacity-50"><Activity size={12}/> 15s Heartbeat Polling</span>
-           </div>
-           <div className="opacity-30 select-none">AgentSec Architecture © 2026</div>
+          <div className="flex items-center gap-6 mb-4 md:mb-0">
+            <span className="flex items-center gap-2 opacity-50"><Shield size={12} /> Air-Gapped Ready</span>
+            <span className="flex items-center gap-2 opacity-50"><Activity size={12} /> 15s Heartbeat Polling</span>
+          </div>
+          <div className="opacity-30 select-none">AgentSec Architecture © 2026</div>
         </footer>
       </div>
     </div>
