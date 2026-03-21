@@ -34,6 +34,8 @@
 | **双模式运行** | `warn`（日志告警放行）/ `block`（拦截替换为安全文本） |
 | **可观测性** | 内置 Web 控制台，实时查看告警、Agent 资产、规则命中、审计日志 |
 | **LangChain 原生** | 基于 `BaseCallbackHandler` 实现，与 LangChain 生态无缝集成 |
+| **工业极简设计** | 深度集成 Impeccable Style，提供极具工业美感、高对比度的专业 SOC 界面 |
+| **独立接入门户** | 专为 Host B 提供 `/onboard` 独立向导页，支持 100% 实时进度同步 |
 
 ---
 
@@ -77,6 +79,9 @@ docker-compose up --build -d
 # 访问 Web 控制台
 open http://localhost:3000
 # 账号: admin  密码: admin123
+
+# B 机器独立接入向导 (Standalone Portal)
+open http://localhost:8000/onboard
 ```
 
 启动后你将看到演示 Agent 自动模拟 6 种攻击场景，所有拦截事件实时显示在控制台大盘。
@@ -190,6 +195,8 @@ AgentSecurityCallback(
 访问 `http://localhost:3000` 后，你可以：
 
 - **大盘总览**：实时查看拦截次数、在线 Agent 数量、P99 延迟、误报率等核心指标
+- **接入向导 V3**：全自动动态脚本分发，支持 SDK 离线包下发、环境自适应、连通性探测、逻辑自检与心跳注册 5 大步骤实时监控
+- **工业化 UI**：基于 Outfit & Inter 字体系统，针对高强度 SOC 监控场景优化的 Tabular Precision 布局
 - **告警中心**：逐条研判每一次安全事件，支持调用链还原、处置 SOP、误报反馈
 - **Agent 资产池**：管理所有已接入 SDK 的 Agent，查看风险评分、权限状态
 - **检测规则**：查看规则引擎版本、每条规则命中频率、ONNX 模型状态
