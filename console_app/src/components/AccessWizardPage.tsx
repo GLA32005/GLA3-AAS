@@ -50,6 +50,17 @@ export function AccessWizardPage() {
   const [checkStatus, setCheckStatus] = useState<any[]>([]);
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 3000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   const nextStep = () => setStep(s => Math.min(s + 1, 4));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
@@ -289,7 +300,13 @@ agent_executor.run(
               <div className="space-y-3">
                 <div className="flex justify-between items-end">
                   <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">命令行：安装 SDK</label>
-                  <button className="text-[10px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1"><Copy size={12}/> 复制</button>
+                  <button 
+                    onClick={() => handleCopy("pip install agentsec", 'pip')}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors"
+                  >
+                    {copiedId === 'pip' ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12}/>}
+                    {copiedId === 'pip' ? <span className="text-emerald-600 font-bold">已复制!</span> : '复制'}
+                  </button>
                 </div>
                 <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center gap-3">
                   <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 font-mono text-sm leading-none">$</div>
@@ -300,7 +317,13 @@ agent_executor.run(
               <div className="space-y-3">
                 <div className="flex justify-between items-end">
                   <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">代码：业务配置</label>
-                  <button className="text-[10px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1"><Copy size={12}/> 复制</button>
+                  <button 
+                    onClick={() => handleCopy(`from agentsec import AgentSecurityCallback\n\ncallback = AgentSecurityCallback(\n    agent_name="${formData.name}",\n    agent_token="${token}",\n    mode="warn"\n)`, 'code')}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors"
+                  >
+                    {copiedId === 'code' ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12}/>}
+                    {copiedId === 'code' ? <span className="text-emerald-600 font-bold">已复制!</span> : '复制'}
+                  </button>
                 </div>
                 <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative font-mono text-[12px] leading-relaxed">
                   <div className="text-zinc-500 italic mb-2"># 注入身份元数据，系统将自动建立资产台账</div>
@@ -308,7 +331,7 @@ agent_executor.run(
                     <span className="text-purple-400">from</span> agentsec <span className="text-purple-400">import</span> AgentSecurityCallback<br/><br/>
                     callback = AgentSecurityCallback(<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;agent_name=<span className="text-emerald-400">"{formData.name}"</span>,<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;agent_token=<span className="text-emerald-400">{token}</span>,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;agent_token=<span className="text-emerald-400">"{token}"</span>,<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;mode=<span className="text-emerald-400">"warn"</span><br/>
                     )
                   </div>

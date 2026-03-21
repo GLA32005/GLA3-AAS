@@ -23,12 +23,32 @@ function App() {
   const [activePage, setActivePage] = useState('overview');
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
+  const [alertCount, setAlertCount] = useState(0);
+
+  const fetchAlertCount = async () => {
+    try {
+      const res = await axios.get('/api/alerts');
+      if (Array.isArray(res.data)) {
+        setAlertCount(res.data.length);
+      }
+    } catch (err) {
+      console.error("Failed to fetch alert count:", err);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('agentsec_token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchAlertCount(); // Initial fetch
     }
+
+    // Poll every 30 seconds
+    const interval = setInterval(() => {
+      if (localStorage.getItem('agentsec_token')) {
+        fetchAlertCount();
+      }
+    }, 30000);
 
     const interceptor = axios.interceptors.response.use(
       (response) => response,
@@ -39,7 +59,10 @@ function App() {
         return Promise.reject(error);
       }
     );
-    return () => axios.interceptors.response.eject(interceptor);
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleLogin = (token: string) => {
@@ -70,7 +93,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-[#f9fafb] text-zinc-800 overflow-hidden font-sans">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} alertCount={alertCount} />
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Topbar activePage={activePage} />
