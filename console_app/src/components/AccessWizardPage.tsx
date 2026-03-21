@@ -219,35 +219,35 @@ export function AccessWizardPage() {
                   </div>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6">
                   <div className="space-y-3">
                     <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1 block">防护模式</label>
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-3">
                       <button
                         onClick={() => setFormData({ ...formData, mode: 'warn' })}
-                        className={`p-6 rounded-2xl border-2 transition-all text-left group ${formData.mode === 'warn' ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl shadow-zinc-900/20 translate-x-1' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
+                        className={`p-5 rounded-2xl border-2 transition-all text-left group ${formData.mode === 'warn' ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl shadow-zinc-900/20 translate-x-1' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
                       >
-                        <div className="font-bold text-[14px] mb-2 flex items-center justify-between">
+                        <div className="font-bold text-[13px] mb-1.5 flex items-center justify-between">
                           <span>Warn</span>
-                          {formData.mode === 'warn' && <CheckCircle2 size={16} className="text-emerald-400" />}
+                          {formData.mode === 'warn' && <CheckCircle2 size={14} className="text-emerald-400" />}
                         </div>
-                        <div className="text-[11px] opacity-70 leading-relaxed">仅记录告警，不拦截业务，适合初次接入或行为学习阶段。</div>
+                        <div className="text-[10px] opacity-70 leading-relaxed">仅记录告警，不拦截业务，适合初次接入或行为学习阶段。</div>
                       </button>
                       <button
                         onClick={() => setFormData({ ...formData, mode: 'block' })}
-                        className={`p-6 rounded-2xl border-2 transition-all text-left group ${formData.mode === 'block' ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl shadow-zinc-900/20 translate-x-1' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
+                        className={`p-5 rounded-2xl border-2 transition-all text-left group ${formData.mode === 'block' ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl shadow-zinc-900/20 translate-x-1' : 'border-zinc-100 bg-white text-zinc-500 hover:border-zinc-200'}`}
                       >
-                        <div className="font-bold text-[14px] mb-2 flex items-center justify-between">
+                        <div className="font-bold text-[13px] mb-1.5 flex items-center justify-between">
                           <span>Block</span>
-                          {formData.mode === 'block' && <CheckCircle2 size={16} className="text-emerald-400" />}
+                          {formData.mode === 'block' && <CheckCircle2 size={14} className="text-emerald-400" />}
                         </div>
-                        <div className="text-[11px] opacity-70 leading-relaxed">高风险操作直接拦截，强安全策略模式，适合已定基线的成熟资产。</div>
+                        <div className="text-[10px] opacity-70 leading-relaxed">高风险操作直接拦截，强安全策略模式，适合已定基线的成熟资产。</div>
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100 mt-12">
-                     <p className="text-[11px] text-zinc-500 leading-relaxed italic">
+                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                     <p className="text-[10px] text-zinc-500 leading-relaxed italic">
                        ✨ 提示：模式选择将决定生成的 `install.sh` 脚本中的默认防护行为。
                      </p>
                   </div>
