@@ -278,8 +278,26 @@
         }
 
         function copyCmd() {
-            navigator.clipboard.writeText(document.getElementById('cmd-text').textContent);
-            alert('命令已复制');
+            const text = document.getElementById('cmd-text').textContent;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('命令已复制');
+                });
+            } else {
+                // 兼容非安全上下文 (HTTP) 的复制逻辑
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert('命令已复制 (已使用备选方案)');
+                } catch (err) {
+                    console.error('Fallback copy failed', err);
+                    alert('复制失败，请手动选择命令文本进行复制');
+                }
+                document.body.removeChild(textArea);
+            }
         }
 
         async function startOnboarding() {

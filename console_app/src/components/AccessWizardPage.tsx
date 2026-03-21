@@ -67,13 +67,31 @@ export function AccessWizardPage() {
   const installCmd = `curl -sSL "${backendUrl}/api/install.sh?token=${token}&agent_name=${formData.name}" | bash`;
 
   const handleCopy = async (text: string, id: string) => {
+    // 优先使用高级 API
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 3000);
+        return;
+      } catch (err) {
+        console.error('Modern copy failed, falling back...', err);
+      }
+    }
+
+    // Fallback: 兼容非 HTTPS 环境
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
     try {
-      await navigator.clipboard.writeText(text);
+      document.execCommand('copy');
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 3000);
     } catch (err) {
-      console.error('Failed to copy text: ', err);
+      console.error('Fallback copy failed: ', err);
     }
+    document.body.removeChild(textArea);
   };
 
   const nextStep = () => setStep(s => Math.min(s + 1, 4));
