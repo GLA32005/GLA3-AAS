@@ -17,6 +17,7 @@ import { AccessWizardPage } from './components/AccessWizardPage';
 import { PermissionsPage } from './components/PermissionsPage';
 import { AuditLogPage } from './components/AuditLogPage';
 import { CompliancePage } from './components/CompliancePage';
+import { API_ENDPOINTS } from './lib/api';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!localStorage.getItem('agentsec_token'));
@@ -29,13 +30,13 @@ function App() {
   const fetchCounters = async () => {
     try {
       // 1. 获取告警数 (需解析 .alerts 数组)
-      const alertsRes = await axios.get('/api/alerts');
+      const alertsRes = await axios.get(API_ENDPOINTS.ALERTS);
       if (alertsRes.data && alertsRes.data.alerts) {
         setAlertCount(alertsRes.data.alerts.length);
       }
       
       // 2. 获取 Agent 数 (需解析 .agents 数组)
-      const agentsRes = await axios.get('/api/agents');
+      const agentsRes = await axios.get(API_ENDPOINTS.AGENTS);
       if (agentsRes.data && agentsRes.data.agents) {
         setAgentCount(agentsRes.data.agents.length);
       }
