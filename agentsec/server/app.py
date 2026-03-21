@@ -531,7 +531,7 @@ async def onboard_ping(req: OnboardPingRequest):
              )
              await conn.execute(stmt)
         
-    await redis_client.set_session(key, status_data, expire=3600)
+    await redis_client.set_session(key, status_data, ttl_seconds=3600)
     return {"status": "ok"}
 
 @app.get("/api/agents/onboard-status/{token}")
