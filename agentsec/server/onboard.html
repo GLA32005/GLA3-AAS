@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentSec — 独立接入向导 (Host B)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --bg: #09090b;
+            --card: #18181b;
+            --border: #27272a;
+            --primary: #10b981;
+            --text: #fafafa;
+            --text-dim: #a1a1aa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 { font-weight: 800; font-size: 1.875rem; margin-bottom: 0.5rem; letter-spacing: -0.025em; }
+        p.desc { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; }
+
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+        input {
+            width: 100%; background: #09090b; border: 1px solid var(--border);
+            border-radius: 0.75rem; padding: 0.75rem 1rem; color: white;
+            font-size: 0.875rem; outline: none; transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--primary); }
+
+        .cmd-box {
+            background: #000; border: 1px solid var(--border); border-radius: 1rem;
+            padding: 1.25rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem;
+            position: relative; margin-top: 1.5rem; overflow-x: auto;
+        }
+        .cmd-box pre { color: var(--primary); white-space: pre-wrap; word-break: break-all; }
+        .copy-btn {
+            position: absolute; top: 0.5rem; right: 0.5rem;
+            background: var(--border); border: none; color: white;
+            padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem;
+            cursor: pointer; opacity: 0.7; transition: opacity 0.2s;
+        }
+        .copy-btn:hover { opacity: 1; }
+
+        .steps { margin-top: 2rem; display: none; }
+        .step-item {
+            display: flex; align-items: center; gap: 1rem; padding: 0.75rem;
+            border-bottom: 1px solid var(--border); opacity: 0.4; transition: all 0.3s;
+        }
+        .step-item.active { opacity: 1; color: var(--primary); }
+        .step-item.done { opacity: 0.8; color: var(--text); }
+        .step-num { 
+            width: 1.5rem; height: 1.5rem; border: 1px solid currentColor;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; font-weight: bold;
+        }
+
+        .btn-main {
+            width: 100%; background: var(--primary); color: #000; border: none;
+            padding: 1rem; border-radius: 0.75rem; font-weight: 800; cursor: pointer;
+            margin-top: 2rem; transition: transform 0.1s;
+        }
+        .btn-main:active { transform: scale(0.98); }
+        
+        .badge {
+            display: inline-flex; align-items: center; gap: 0.5rem; 
+            padding: 0.25rem 0.75rem; background: #064e3b; color: #10b981;
+            border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem;
+        }
+        .dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="badge"><div class="dot"></div> AGENTSEC PORTAL V3</div>
+        <h1>接入你的 Agent</h1>
+        <p class="desc">在 Host B 执行安装脚本，实时同步接入进度到当前页面。</p>
+
+        <div id="setup-panel">
+            <div class="form-group">
+                <label>Agent 名称</label>
+                <input type="text" id="agentName" placeholder="my-agent-01" oninput="updateCmd()">
+            </div>
+            
+            <div class="form-group">
+                <label>执行以下命令开始接入</label>
+                <div class="cmd-box">
+                    <button class="copy-btn" onclick="copyCmd()">复制</button>
+                    <pre id="cmd-text">curl -sSL ... | bash</pre>
+                </div>
+            </div>
+
+            <button class="btn-main" onclick="startOnboarding()">我已开始在主机上执行</button>
+        </div>
+
+        <div id="status-panel" class="steps">
+            <div class="step-item" id="step-1"><div class="step-num">1</div> SDK 离线分发</div>
+            <div class="step-item" id="step-2"><div class="step-num">2</div> 环境配置与隔离</div>
+            <div class="step-item" id="step-3"><div class="step-num">3</div> 连通性测试</div>
+            <div class="step-item" id="step-4"><div class="step-num">4</div> 动态逻辑自检</div>
+            <div class="step-item" id="step-5"><div class="step-num">5</div> 心跳注册完成</div>
+            
+            <div id="finish-msg" style="display:none; text-align:center; margin-top:2rem;">
+                <h3 style="color:var(--primary)">✅ 接入圆满完成</h3>
+                <p style="font-size:0.875rem; color:var(--text-dim); margin-top:0.5rem;">Agent 已上线，现在可以关闭此页面。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = "agt_" + Math.random().toString(36).substr(2, 10);
+        const backendUrl = window.location.origin;
+
+        function updateCmd() {
+            const name = document.getElementById('agentName').value || 'unnamed-agent';
+            const cmd = `curl -sSL "${backendUrl}/api/install.sh?token=${token}&agent_name=${name}" | bash`;
+            document.getElementById('cmd-text').textContent = cmd;
+        }
+
+        function copyCmd() {
+            navigator.clipboard.writeText(document.getElementById('cmd-text').textContent);
+            alert('命令已复制');
+        }
+
+        async function startOnboarding() {
+            document.getElementById('setup-panel').style.display = 'none';
+            document.getElementById('status-panel').style.display = 'block';
+            
+            const poll = setInterval(async () => {
+                try {
+                    const res = await fetch(`${backendUrl}/api/agents/onboard-status/${token}`);
+                    const data = await res.json();
+                    
+                    for (let i = 1; i <= 5; i++) {
+                        const el = document.getElementById(`step-${i}`);
+                        if (i < data.current_step) {
+                            el.className = 'step-item done';
+                        } else if (i === data.current_step) {
+                            el.className = 'step-item active';
+                        }
+                    }
+
+                    if (data.is_finished) {
+                        clearInterval(poll);
+                        document.getElementById('finish-msg').style.display = 'block';
+                    }
+                } catch (e) {
+                    console.error("Polling error", e);
+                }
+            }, 2000);
+        }
+
+        updateCmd();
+    </script>
+</body>
+</html>

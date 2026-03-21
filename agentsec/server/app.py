@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import FastAPI, Request, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -21,6 +21,16 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI(title="AgentSec Governance Console API", version="2.0")
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_onboard_page():
+    """为 Host B 用户提供独立的一键接入 Web 界面"""
+    import os
+    path = "agentsec/server/onboard.html"
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "Onboarding page not found. Please ensure agentsec/server/onboard.html exists."
 
 # ----------- MODELS -----------
 class PushConfig(BaseModel):
