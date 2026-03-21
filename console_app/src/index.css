@@ -10,3 +10,25 @@
     letter-spacing: -0.01em;
   }
 }
+
+@layer utilities {
+  .animate-logo-scan {
+    position: relative;
+    overflow: visible;
+  }
+  .animate-logo-scan::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 1.5px solid #a1a1aa;
+    border-radius: inherit;
+    animation: logo-scan 3.5s infinite var(--logo-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+    pointer-events: none;
+  }
+
+  @keyframes logo-scan {
+    0% { transform: scale(1.4); opacity: 0; }
+    20% { opacity: 0.4; }
+    100% { transform: scale(0.4); opacity: 0; }
+  }
+}

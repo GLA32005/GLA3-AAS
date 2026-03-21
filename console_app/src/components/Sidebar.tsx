@@ -43,13 +43,13 @@ export function Sidebar({ activePage, setActivePage, onLogout, alertCount = 0, a
   return (
     <div className="w-60 bg-white border-r border-zinc-200 flex flex-col pt-6 font-sans shadow-sm z-10 w-shrink-0">
       <div className="px-6 pb-6 mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] flex items-center justify-center shadow-lg shadow-purple-900/20">
-             <Shield className="text-white" size={12} strokeWidth={2} />
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center shadow-lg shadow-zinc-900/20 animate-logo-scan">
+             <Shield className="text-zinc-100" size={13} strokeWidth={2.5} />
           </div>
-          <div className="text-[14px] font-bold text-zinc-900 tracking-tight">AgentSec</div>
+          <div className="text-[15px] font-black text-zinc-900 tracking-tighter uppercase italic">AgentSec</div>
         </div>
-        <div className="text-[10px] text-zinc-400 mt-1.5 font-medium tracking-wide">企业增强版 V1.5</div>
+        <div className="text-[10px] text-zinc-400 mt-1 font-bold tracking-widest uppercase opacity-60">Enterprise Security V1.5</div>
       </div>
       
       <div className="flex-1 overflow-y-auto px-3">
