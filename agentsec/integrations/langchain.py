@@ -20,6 +20,7 @@ from agentsec.async_tasks.queue_manager import queue_manager
 
 import threading
 import json
+import os
 
 logger = logging.getLogger("agentsec")
 
@@ -37,7 +38,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         agent_token: str = "unauthorized",
         business_line: str = "default",
         owner: str = "admin",
-        console_url: str = "http://127.0.0.1:8000",
+        console_url: Optional[str] = None,
         stream_window_size: int = 32
     ):
         """
@@ -47,7 +48,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         :param agent_token: Agent 认证令牌
         :param business_line: 所属业务线
         :param owner: 负责人
-        :param console_url: 控制台后端 API 地址
+        :param console_url: 控制台后端 API 地址 (若不提供，则从环境变量 AGENTSEC_API_URL 读取，默认为本地)
         :param stream_window_size: 流式检测窗口大小 (Token 数)
         """
         self.mode = mode.lower()
@@ -55,7 +56,11 @@ class AgentSecurityCallback(BaseCallbackHandler):
         self.agent_token = agent_token
         self.business_line = business_line
         self.owner = owner
-        self.console_url = console_url.rstrip("/")
+        
+        # 自动发现后端地址逻辑
+        self.console_url = console_url or os.getenv("AGENTSEC_API_URL", "http://127.0.0.1:8000")
+        self.console_url = self.console_url.rstrip("/")
+        
         self.stream_window_size = stream_window_size
 
         if self.mode not in ("warn", "block"):
