@@ -27,24 +27,28 @@ interface StepProps {
 }
 
 const StepIndicator = ({ active, done, index, label }: StepProps) => (
-  <div className="flex items-center flex-1">
+  <div className="flex items-center flex-1 group">
     <div className={`
-      w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-mono border-2 transition-all duration-500
-      ${active ? 'bg-zinc-900 border-zinc-900 text-white scale-110 shadow-lg' : 
+      w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-mono tabular-nums border-2 transition-all duration-700
+      ${active ? 'bg-zinc-900 border-zinc-900 text-white scale-110 shadow-[0_0_20px_rgba(0,0,0,0.1)]' : 
         done ? 'bg-emerald-500 border-emerald-500 text-white' : 
         'bg-white border-zinc-200 text-zinc-400'}
     `}>
-      {done ? <CheckCircle2 size={16} /> : index}
+      {done ? <CheckCircle2 size={18} /> : index}
     </div>
-    <div className="ml-3 flex flex-col">
-      <span className={`text-[11px] font-bold uppercase tracking-tighter ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
+    <div className="ml-4 flex flex-col">
+      <span className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5 ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
         STEP {index}
       </span>
-      <span className={`text-[13px] font-medium whitespace-nowrap ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
+      <span className={`text-[13px] font-semibold whitespace-nowrap tracking-tight ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
         {label}
       </span>
     </div>
-    {index < 4 && <div className={`flex-1 h-[1.5px] mx-6 transition-all duration-1000 ${done ? 'bg-emerald-200' : 'bg-zinc-100'}`} />}
+    {index < 4 && (
+      <div className="flex-1 px-8">
+        <div className={`h-[1px] w-full transition-all duration-1000 ${done ? 'bg-emerald-500' : 'bg-zinc-200'}`} />
+      </div>
+    )}
   </div>
 );
 
@@ -139,10 +143,10 @@ export function AccessWizardPage() {
         </div>
         <div className="flex-1">
           <div className="flex justify-between items-center mb-1">
-            <span className={`text-[13px] font-bold ${isDone ? 'text-emerald-700' : isCurrent ? 'text-zinc-900' : 'text-zinc-400'}`}>
+            <span className={`text-[13px] font-bold tracking-tight ${isDone ? 'text-emerald-700' : isCurrent ? 'text-zinc-900' : 'text-zinc-400'}`}>
               {label}
             </span>
-            {stepData?.time && <span className="text-[10px] font-mono text-zinc-400">{stepData.time}</span>}
+            {stepData?.time && <span className="text-[10px] font-mono tabular-nums text-zinc-400/80">{stepData.time}</span>}
           </div>
           <p className={`text-[12px] ${isDone ? 'text-emerald-600/70' : isFail ? 'text-red-500' : 'text-zinc-500'}`}>
             {stepData?.message || (isCurrent ? '等待数据回传...' : '准备就绪')}
@@ -157,17 +161,17 @@ export function AccessWizardPage() {
     <div className="p-6 animate-in fade-in duration-700">
       <div className="w-full">
 
-        <div className="flex gap-0 mb-10 px-4">
+        <div className="flex gap-0 mb-14 px-4">
           <StepIndicator active={step === 1} done={step > 1} index={1} label="Agent 信息" />
           <StepIndicator active={step === 2} done={step > 2} index={2} label="获取安装预览" />
           <StepIndicator active={step === 3} done={step > 3} index={3} label="实时心跳监测" />
           <StepIndicator active={step === 4} done={step > 4} index={4} label="接入完成" />
         </div>
 
-        <div className="bg-white border border-zinc-200 rounded-[24px] shadow-2xl shadow-zinc-200/50 overflow-hidden min-h-[580px] flex flex-col relative">
+        <div className="bg-white border border-zinc-200/60 rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] overflow-hidden min-h-[580px] flex flex-col relative ring-1 ring-zinc-900/5">
           {/* Progress Overlays */}
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-zinc-100">
-             <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${(step/4)*100}%` }} />
+          <div className="absolute top-0 left-0 w-full h-[3px] bg-zinc-100/50">
+             <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(16,185,129,0.5)]" style={{ width: `${(step/4)*100}%` }} />
           </div>
 
           {step === 1 && (
@@ -262,26 +266,26 @@ export function AccessWizardPage() {
               </div>
 
               <div className="space-y-8 flex-1">
-                <div className="bg-zinc-900 rounded-3xl p-1 shadow-2xl shadow-zinc-900/20">
-                  <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-800">
+                <div className="bg-zinc-950 rounded-[28px] p-1.5 shadow-2xl shadow-zinc-900/40 border border-zinc-800/50">
+                  <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-900/50">
                     <div className="flex items-center gap-4">
                        <div className="flex gap-1.5">
-                          <div className="w-3 h-3 rounded-full bg-red-500/30" />
-                          <div className="w-3 h-3 rounded-full bg-amber-500/30" />
-                          <div className="w-3 h-3 rounded-full bg-emerald-500/30" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-400/20" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-amber-400/20" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/20" />
                        </div>
-                       <span className="text-[11px] font-mono font-black text-zinc-500 uppercase tracking-widest pl-4">Exclusive Onboard Script</span>
+                       <span className="text-[10px] font-mono font-bold text-zinc-600 uppercase tracking-[0.3em] pl-4">Onboard Payload</span>
                     </div>
                     <button 
                       onClick={() => handleCopy(installCmd, 'mainCmd')}
-                      className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[12px] font-black transition-all border-2 border-transparent ${copiedId === 'mainCmd' ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                      className={`flex items-center gap-2 px-5 py-2 rounded-xl text-[11px] font-bold transition-all duration-500 border ${copiedId === 'mainCmd' ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
-                      {copiedId === 'mainCmd' ? <>已复制到剪贴板 <CheckCircle2 size={14} /></> : <>复制命令 <Copy size={14} /></>}
+                      {copiedId === 'mainCmd' ? <>Copied <CheckCircle2 size={12} /></> : <>Copy Payload <Copy size={12} /></>}
                     </button>
                   </div>
-                  <div className="p-8 font-mono text-[14px] overflow-x-auto text-zinc-300 leading-relaxed whitespace-pre bg-zinc-950/50 rounded-b-3xl">
-                    <span className="text-zinc-600 select-none mr-4">$</span>
-                    <span className="text-emerald-400">curl</span> -sSL <span className="text-purple-400 italic">"{backendUrl}/api/install.sh?token={token.slice(0, 10)}..."</span> | <span className="text-emerald-400 font-bold">bash</span>
+                  <div className="p-8 font-mono text-[13px] overflow-x-auto text-zinc-400 leading-relaxed whitespace-pre bg-zinc-950 rounded-b-[24px]">
+                    <span className="text-zinc-700 select-none mr-4">$</span>
+                    <span className="text-emerald-400/90">curl</span> -sSL <span className="text-zinc-500">"</span><span className="text-purple-400/90 italic">{backendUrl}/api/install.sh?token={token.slice(0, 8)}...</span><span className="text-zinc-500">"</span> | <span className="text-emerald-400 font-bold">bash</span>
                   </div>
                 </div>
 
