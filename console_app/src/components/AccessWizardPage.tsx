@@ -136,25 +136,10 @@ export function AccessWizardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 p-8 lg:p-12 animate-in fade-in duration-700">
-      <div className="max-w-5xl mx-auto">
-        <header className="flex justify-between items-center mb-12">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-xl rotate-3">
-              <Shield size={22} strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-zinc-900 tracking-tighter uppercase italic">AgentSec <span className="text-emerald-500 NOT-italic font-mono text-sm ml-1 select-none">v2.5</span></h1>
-              <p className="text-xs text-zinc-400 font-medium">Enterprise Security Hub • Onboarding</p>
-            </div>
-          </div>
-          <div className="hidden md:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-bold text-emerald-700 font-mono uppercase tracking-wide">Cloud Console Connected</span>
-          </div>
-        </header>
+    <div className="p-6 animate-in fade-in duration-700">
+      <div className="w-full">
 
-        <div className="flex gap-0 mb-16 px-4">
+        <div className="flex gap-0 mb-10 px-4">
           <StepIndicator active={step === 1} done={step > 1} index={1} label="Agent 信息" />
           <StepIndicator active={step === 2} done={step > 2} index={2} label="获取安装预览" />
           <StepIndicator active={step === 3} done={step > 3} index={3} label="实时心跳监测" />

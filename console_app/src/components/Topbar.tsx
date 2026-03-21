@@ -5,7 +5,13 @@ const titleMap: Record<string, string> = {
   alerts: '告警中心 Incident Response',
   agents: 'Agent 清单 Asset Inventory',
   rules: '检测规则 Signatures',
-  settings: '系统设置 Configuration'
+  settings: '系统设置 Configuration',
+  register: '接入向导 Access Wizard',
+  permissions: '权限管理 Permissions',
+  audit: '审计日志 Audit Logs',
+  compliance: '合规态势 Compliance',
+  report: '分析报告 Analytics',
+  alert_detail: '告警详情 Alert Intelligence'
 };
 
 export function Topbar({ activePage }: { activePage: string }) {
