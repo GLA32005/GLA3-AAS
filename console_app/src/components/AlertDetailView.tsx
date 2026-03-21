@@ -16,12 +16,19 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
   const [scanResults, setScanResults] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [current, setCurrent] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (alertId) {
       axios.get(`${API_ENDPOINTS.ALERTS}/${alertId}`)
-        .then(res => setCurrent(res.data))
-        .catch(err => console.error("Failed to fetch alert detail:", err));
+        .then(res => {
+          setCurrent(res.data);
+          setError(null);
+        })
+        .catch(err => {
+          console.error("Failed to fetch alert detail:", err);
+          setError("无法获取告警详情，请确认后端 API 服务状态。");
+        });
     }
   }, [alertId]);
 
@@ -67,6 +74,22 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
       setFeedbackStatus(null);
     }
   };
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+      <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-4">
+        <ShieldAlert size={24} />
+      </div>
+      <h2 className="text-zinc-800 font-bold text-lg">告警数据回溯失败</h2>
+      <p className="text-zinc-500 text-sm max-w-md">{error}</p>
+      <button 
+        onClick={onBack}
+        className="mt-6 px-4 py-2 bg-zinc-900 text-white rounded-md text-[12px] font-medium hover:bg-zinc-800 transition-all font-sans"
+      >
+        返回告警中心
+      </button>
+    </div>
+  );
 
   if (!current) return (
     <div className="flex items-center justify-center h-full text-zinc-400 text-sm italic">

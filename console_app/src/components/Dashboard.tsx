@@ -8,12 +8,39 @@ import { API_ENDPOINTS } from '../lib/api';
 export function Dashboard() {
   const [data, setData] = useState<any>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     // 调用 FastAPI 端点获取数据
     axios.get(API_ENDPOINTS.DASHBOARD)
-      .then(res => setData(res.data))
-      .catch(err => console.error("Failed to fetch dashboard data:", err));
+      .then(res => {
+        setData(res.data);
+        setError(null);
+      })
+      .catch(err => {
+        console.error("Failed to fetch dashboard data:", err);
+        setError("无法通过 http://127.0.0.1:8000 连接至安全大脑 (Backend Offline)");
+      });
   }, []);
+
+  if (error) return (
+     <div className="flex flex-col items-center justify-center h-full space-y-4">
+         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 flex flex-col items-center max-w-md text-center">
+            <ShieldAlert size={32} className="mb-3 opacity-50" />
+            <div className="text-[14px] font-bold mb-1">系统通信异常</div>
+            <div className="text-[11px] opacity-80">{error}</div>
+            <div className="mt-4 p-2.5 bg-white border border-red-100 rounded text-[10px] text-zinc-500 font-mono italic">
+               请确认后端容器或 uvicorn 服务是否已在 8000 端口启动。
+            </div>
+         </div>
+         <button 
+           onClick={() => window.location.reload()}
+           className="text-[11px] text-[#4c1d95] font-bold hover:underline"
+         >
+           尝试重新连接 ↗
+         </button>
+     </div>
+  );
 
   if (!data) return (
      <div className="flex items-center justify-center h-full">
