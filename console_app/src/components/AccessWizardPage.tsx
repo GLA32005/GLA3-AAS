@@ -68,7 +68,7 @@ export function AccessWizardPage() {
 
   // ── Auto-generate Install Command ──
   const backendUrl = API_ENDPOINTS.DASHBOARD.replace('/api/dashboard', '');
-  const installCmd = `curl -sSL "${backendUrl}/api/install.sh?token=${token}&agent_name=${formData.name}" | bash`;
+  const installCmd = `curl -sSL "${backendUrl}/api/install.sh?token=${token}&agent_name=${formData.name}&biz_line=${formData.businessLine}&owner=${formData.owner}" | bash`;
 
   const handleCopy = async (text: string, id: string) => {
     // 优先使用高级 API
@@ -285,7 +285,7 @@ export function AccessWizardPage() {
                   </div>
                   <div className="p-8 font-mono text-[13px] overflow-x-auto text-zinc-400 leading-relaxed whitespace-pre bg-zinc-950 rounded-b-[24px]">
                     <span className="text-zinc-700 select-none mr-4">$</span>
-                    <span className="text-emerald-400/90">curl</span> -sSL <span className="text-zinc-500">"</span><span className="text-purple-400/90 italic">{backendUrl}/api/install.sh?token={token.slice(0, 8)}...</span><span className="text-zinc-500">"</span> | <span className="text-emerald-400 font-bold">bash</span>
+                    <span className="text-emerald-400/90">curl</span> -sSL <span className="text-zinc-500">"</span><span className="text-purple-400/90 italic">{backendUrl}/api/install.sh?token={token.slice(0, 8)}...&biz_line={formData.businessLine}&owner={formData.owner}</span><span className="text-zinc-500">"</span> | <span className="text-emerald-400 font-bold">bash</span>
                   </div>
                 </div>
 
