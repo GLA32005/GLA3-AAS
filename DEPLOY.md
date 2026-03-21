@@ -17,15 +17,7 @@
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
 
-# 添加 Docker 官方 GPG 密钥
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-
-# 设置仓库
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
 # 安装 Docker 引擎
-sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
 
@@ -38,17 +30,19 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plu
    ```
 
 2. **配置环境变量**：
-   创建并编辑 `.env` 文件：
+   复制环境模板并根据实际情况修改：
    ```bash
-   cp .env.example .env  # 如果有 example 文件的话，否则直接创建
+   cp .env.example .env
    ```
-   **关键配置**：
-   - `DB_HOST`: 保持 `db` (Docker 内部域名)
-   - `REDIS_HOST`: 保持 `redis`
+   **关键生产配置**：
+   - `SECRET_KEY`: 用于 JWT 签名的密钥，**请务必修改为强随机字符串**。
+   - `DATABASE_URL`: 数据库连接串（Docker 部署保持默认即可）。
+   - `REDIS_URL`: Redis 连接串（Docker 部署保持默认即可）。
 
 3. **启动服务**：
+   Docker Compose 会自动应用 `.env` 变量，并启动 Gunicorn 生产服务器：
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 
 ## 3. 云主机网络配置 (安全组)
@@ -64,14 +58,51 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plu
 > 部署成功后，通过 `http://服务器公网IP:3000` 访问控制台。
 > 如果无法加载数据，请检查您的浏览器是否能连通 `http://服务器公网IP:8000`。
 
-## 4. 常见问题排查
+## 4. 生产环境进阶 (Production Hardening)
 
-- **容器状态检查**：`docker compose ps`
-- **查看日志**：`docker compose logs -f backend`
-- **手动迁移数据库**（如果自动迁移失败）：
-  ```bash
-  docker compose exec backend alembic upgrade head
-  ```
+### 通信加密 (HTTPS/SSL)
+
+强烈建议在生产环境中使用 Nginx 作为反向代理，并配置 SSL 证书：
+
+```nginx
+# Nginx 配置示例 (/etc/nginx/sites-available/agentsec)
+server {
+    listen 443 ssl;
+    server_name console.agentsec.com;
+
+    ssl_certificate /path/to/fullchain.pem;
+    ssl_certificate_key /path/to/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:3000; # Frontend
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /api {
+        proxy_pass http://localhost:8000; # Backend
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+### 日志滚动 (Log Rotation)
+
+为了防止审计日志撑爆磁盘，请在宿主机配置 Docker 日志驱动：
+
+```yaml
+# docker-compose.yml 建议添加
+services:
+  backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+```
+
+## 5. 常见问题排查与验收
 
 ---
-如有任何安全漏洞，请通过 [SECURITY.md](SECURITY.md) 中的方式联系我们。
+如对部署有疑问，请参考 [walkthrough.md](walkthrough.md) 中的架构说明。🛡️🚀

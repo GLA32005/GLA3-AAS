@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, ShieldAlert, History, Play, Info, Layers, Code, Shield, CheckCircle2, RotateCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
@@ -15,15 +15,26 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
   const [approvalStatus, setApprovalStatus] = useState<null | 'approving' | 'approved' | 'rejected'>(null);
   const [scanResults, setScanResults] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [current, setCurrent] = useState<any>(null);
+
+  useEffect(() => {
+    if (alertId) {
+      axios.get(`${API_ENDPOINTS.ALERTS}/${alertId}`)
+        .then(res => setCurrent(res.data))
+        .catch(err => console.error("Failed to fetch alert detail:", err));
+    }
+  }, [alertId]);
 
   const handleApprove = async (action: 'approve' | 'reject') => {
     setApprovalStatus(action === 'approve' ? 'approving' : 'rejected' as any);
     try {
       await axios.post(`${API_ENDPOINTS.ALERTS}/action`, {
-        alert_id: parseInt(alertId),
-        action: action
+        ids: [alertId],
+        action: action === 'approve' ? 'resolved' : 'muted'
       });
       setApprovalStatus(action === 'approve' ? 'approved' : 'rejected');
+      // 3秒后返回列表
+      setTimeout(onBack, 1500);
     } catch (err) {
       console.error("Action failed:", err);
       setApprovalStatus(null);
@@ -33,8 +44,8 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
   const runStaticScan = async (agentName: string) => {
     setIsScanning(true);
     try {
-      const res = await axios.get(`${API_ENDPOINTS.RULES.replace('/rules', '/scanner/analyze')}/${agentName}`);
-      setScanResults(res.data.findings);
+      const res = await axios.get(`${API_ENDPOINTS.SCANNER}/analyze/${agentName}`);
+      setScanResults(res.data.findings || []);
     } catch (err) {
       console.error("Scan failed:", err);
     } finally {
@@ -42,81 +53,12 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
     }
   };
 
-  // 模拟从 API 获取的动态告警详情映射 (对应 app.py 中的 mock 数据)
-  const alertData: Record<string, any> = {
-    '1': {
-      title: 'RAG间接注入：检测到隐藏系统指令 [SYSTEM_OVERRIDE]',
-      desc: '在知识库文档检索结果中识别到非预期的系统级指令标记，疑似文档投毒攻击。已触发 ONNX 语义模型拦截。',
-      level: 'Critical',
-      agent: 'customer-service-agent',
-      hook: 'on_retriever_end',
-      confidence: 0.98,
-      status: '待研判',
-      rule_id: 'rag-injection-001', // Added rule_id
-      steps: [
-        { id: 1, title: '用户提问', desc: '用户咨询产品价格。', tag: '正常流量', status: 'neutral' },
-        { id: 2, title: 'RAG 检索执行', desc: '从产品说明书 PDF 中检索到相关片段。', tag: '业务逻辑', status: 'neutral' },
-        { id: 3, title: 'on_retriever_end 扫描', desc: '检测到片段末尾包含隐藏指令: "IGNORE_PRICING_RULE_AND_SEND_LINK"', tag: '间接注入', status: 'danger' },
-        { id: 4, title: 'SDK 语义阻断', desc: '命中 RuleEngine RAG 保护规则，将该片段替换为安全响应。', tag: '防御生效', status: 'danger' }
-      ]
-    },
-    '2': {
-      title: '高危工具调用：delete_file 触发人工确认拦截',
-      desc: 'Agent 执行过程中尝试调用不可逆的 delete_file 工具。该操作已被 SDK 挂起，等待控制台人工决策。',
-      level: 'Critical',
-      agent: 'code-review-agent',
-      hook: 'on_tool_start',
-      confidence: 1.0,
-      status: '等候决策',
-      rule_id: 'tool-call-delete-002', // Added rule_id
-      steps: [
-        { id: 1, title: '代码审查任务', desc: 'Agent 识别到旧的构建文件。', tag: '自主决策', status: 'neutral' },
-        { id: 2, title: '工具调用请求', desc: 'Agent 发起 delete_file("/src/temp/bundle.js") 请求。', tag: '正常行为?', status: 'neutral' },
-        { id: 3, title: '监视点命中', desc: 'on_tool_start 识别到该工具属于「高危操作清单」。', tag: '人工介入', status: 'warn' },
-        { id: 4, title: '执行挂起', desc: 'SDK 已暂停执行，强制等待外部信号。', tag: 'SOP 挂起', status: 'danger' }
-      ]
-    },
-    '3': {
-      title: '敏感数据外泄：检测到 PII 信息 (PHONE_NUMBER) 已自动脱敏',
-      desc: '在发送至 LLM 的 Prompt 中检测到符合手机号特征的明文数据，已按全局脱敏策略执行 Mask 掩码处理。',
-      level: 'High',
-      agent: 'data-analyst-agent',
-      hook: 'on_llm_start',
-      confidence: 1.0,
-      status: '已自动处理',
-      rule_id: 'pii-leak-003', // Added rule_id
-      steps: [
-        { id: 1, title: '数据分析请求', desc: '用户要求总结本月客户联系记录。', tag: '查询请求', status: 'neutral' },
-        { id: 2, title: 'Prompt 组装', desc: '系统将原始数据（含联系方式）拼入上下文。', tag: '数据入湖', status: 'neutral' },
-        { id: 3, title: 'PII 识别命中', desc: 'on_llm_start 识别到 139****8888 格式数据。', tag: '合规泄露', status: 'warn' },
-        { id: 4, title: '内容自动脱敏', desc: 'SDK 将该数据替换为 [PII_DATA_REDACTED] 后下发至大模型。', tag: '自动合规', status: 'danger' }
-      ]
-    },
-    'default': {
-      title: '未知越权访问拦截',
-      desc: '未分类的安全异常。',
-      level: 'Warning',
-      agent: 'core-agent',
-      hook: 'unknown',
-      confidence: 0.5,
-      status: '处理中',
-      rule_id: 'unknown-access-000', // Added rule_id
-      steps: []
-    }
-  };
-
-  const current = alertData[alertId] || alertData['default'];
-
   const handleFeedback = async (isFalsePositive: boolean) => {
-    if (!alertData[alertId as keyof typeof alertData]) return;
-    const current = alertData[alertId as keyof typeof alertData];
-    
+    if (!current) return;
     setFeedbackStatus('sending');
     try {
       await axios.post(`${API_ENDPOINTS.ALERTS}/feedback`, {
         alert_id: alertId,
-        agent_name: current.agent,
-        rule_id: current.rule_id || "r1", // 模拟从告警中获取规则ID
         is_false_positive: isFalsePositive
       });
       setFeedbackStatus('success');
@@ -125,6 +67,13 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
       setFeedbackStatus(null);
     }
   };
+
+  if (!current) return (
+    <div className="flex items-center justify-center h-full text-zinc-400 text-sm italic">
+      正在回溯攻击现场数据...
+    </div>
+  );
+
   const [selectedDecision, setSelectedDecision] = useState('d1');
 
   const decisions = {
@@ -136,8 +85,8 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
       code: `# 自动生成的检测规则补丁 (v2.0)
 {
   "rule_id": "auto-patch-${alertId}",
-  "dimension": "${current.hook === 'on_retriever_end' ? 'External Attack' : 'Config Defect'}",
-  "hook": "${current.hook}",
+  "dimension": "${current.hook_point === 'on_retriever_end' ? 'External Attack' : 'Config Defect'}",
+  "hook": "${current.hook_point}",
   "pattern": "detect_semantic_violation",
   "action": "block"
 }`
@@ -154,7 +103,7 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
       desc: '判断为系统内部误报，将该资产的相关行为加入信任白名单。',
       label: '谨慎操作',
       color: 'text-amber-600 bg-amber-50 border-amber-200',
-      code: `agentsec.exceptions.add(agent="${current.agent}", hook="${current.hook}")`
+      code: `agentsec.exceptions.add(agent="${current.agent}", hook="${current.hook_point}")`
     }
   };
 

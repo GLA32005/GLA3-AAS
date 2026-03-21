@@ -82,53 +82,62 @@ def main():
         }
     ]
 
-    print("\nStarting periodic attack simulations. Check the web console for alerts!")
+    print("\nStarting periodic simulations. Check the web console for live updates!")
     counter = 1
+    
+    # 模拟不同的 Session ID 以展示大盘的多维数据
+    sessions = ["session-alpha", "session-beta", "session-gamma"]
+
     while True:
-        print(f"\n--- [Wave {counter}] Executing attack scenarios ---")
-        for s in scenarios:
+        print(f"\n--- [Wave {counter}] Heartbeat & Attack Sequence ---")
+        
+        # 1. 发送心跳 (Heartbeat)
+        try:
+            callback.on_llm_start({}, ["Ping"], metadata={"session_id": random.choice(sessions)})
+            print("  💚 [Heartbeat] Agent state synchronized.")
+        except Exception as e:
+            print(f"  ⚠️ [Heartbeat Failed]: {e}")
+
+        # 2. 随机执行攻击场景
+        current_scenarios = random.sample(scenarios, k=random.randint(1, 3))
+        for s in current_scenarios:
             print(f"\n> Running {s['name']}")
             try:
+                session_id = random.choice(sessions)
                 if s["type"] == "llm":
                     prompts = [s["payload"]]
-                    callback.on_llm_start({}, prompts)
-                    if prompts[0] != s["payload"]:
-                        print(f"  ✅ [SDK Blocked/Sanitized Payload]: {prompts[0]}")
-                    else:
-                        print("  ❌ [Failure] Payload was NOT blocked.")
+                    callback.on_llm_start({}, prompts, metadata={"session_id": session_id})
+                    print(f"  🛡️ [SDK Check] Result: {'Blocked/Sanitized' if prompts[0] != s['payload'] else 'Passed'}")
                 elif s["type"] == "rag":
                     class MockDoc:
-                        def __init__(self, content):
-                            self.page_content = content
+                        def __init__(self, content): self.page_content = content
                     docs = [MockDoc(s["payload"])]
-                    docs = callback.on_retriever_end(docs, run_id=f"rag_{counter}")
-                    print(f"  [Sanitized Result]: {docs[0].page_content}")
+                    docs = callback.on_retriever_end(docs, run_id=f"rag_{counter}", metadata={"session_id": session_id})
+                    print(f"  🛡️ [SDK Check] RAG Content Processed.")
                 elif s["type"] == "tool":
-                    callback.on_tool_start({"name": s["payload"]}, s.get("tool_input", ""))
+                    callback.on_tool_start({"name": s["payload"]}, s.get("tool_input", ""), metadata={"session_id": session_id})
+                    print(f"  🛡️ [SDK Check] Tool Call Evaluated.")
                 elif s["type"] == "stream":
                     for token in s["payload"]:
-                        callback.on_llm_new_token(token, run_id=f"stream_{counter}")
-                        time.sleep(0.1)
+                        callback.on_llm_new_token(token, run_id=f"stream_{counter}", metadata={"session_id": session_id})
+                        time.sleep(0.05)
                     callback.on_llm_end(mock_response, run_id=f"stream_{counter}")
+                    print(f"  🛡️ [SDK Check] Stream Segment Analyzed.")
                 elif s["type"] == "multi-turn":
                     for turn in s["turns"]:
-                        print(f"    - Turn Input: {turn['text']}")
-                        try:
-                            callback.on_llm_start({}, [turn['text']], metadata=turn['meta'])
-                            # Simulate AI response to complete the turn
-                            callback.on_llm_end(mock_response, run_id=f"mt_{counter}", metadata=turn['meta'])
-                        except Exception as e:
-                            print(f"      ✅ [SDK Blocked Turn]: {e}")
-                            break # Contextual defense hit!
+                        callback.on_llm_start({}, [turn['text']], metadata=turn['meta'])
+                        callback.on_llm_end(mock_response, run_id=f"mt_{counter}", metadata=turn['meta'])
+                    print(f"  🛡️ [SDK Check] Multi-turn Context Verified.")
                         
             except Exception as e:
-                print(f"  ✅ [SDK Blocked Execution]: {e}")
+                print(f"  ✅ [SDK Blocked Attack]: {e}")
             
-            time.sleep(5)
+            time.sleep(2) # 场景间歇
         
         counter += 1
-        print("\nWaiting 10 seconds before next wave...")
-        time.sleep(10)
+        wait_time = random.randint(5, 15)
+        print(f"\nWaiting {wait_time} seconds before next simulated turn...")
+        time.sleep(wait_time)
 
 if __name__ == "__main__":
     main()

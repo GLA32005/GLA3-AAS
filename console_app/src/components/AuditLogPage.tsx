@@ -11,8 +11,10 @@ export function AuditLogPage() {
 
     useEffect(() => {
         const fetchLogs = async () => {
+            setIsLoading(true);
             try {
-                const res = await axios.get(API_ENDPOINTS.AUDIT_LOGS);
+                const params = searchTerm ? { search: searchTerm } : {};
+                const res = await axios.get(API_ENDPOINTS.AUDIT_LOGS, { params });
                 setLogs(res.data);
             } catch (err) {
                 console.error("Failed to fetch logs:", err);
@@ -20,14 +22,30 @@ export function AuditLogPage() {
                 setIsLoading(false);
             }
         };
-        fetchLogs();
-    }, []);
 
-    const filteredLogs = logs.filter(log => 
-        log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.target.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.user.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+        const timer = setTimeout(() => {
+            fetchLogs();
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const filteredLogs = logs; // 后端已经过滤好了
+
+    const handleExport = async () => {
+        try {
+            const res = await axios.get(`${API_ENDPOINTS.AUDIT_LOGS}/export`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error("Export failed:", err);
+        }
+    };
 
     return (
         <div className="p-8 space-y-6 max-w-[1200px] mx-auto animate-in fade-in duration-300">
@@ -39,7 +57,10 @@ export function AuditLogPage() {
                     </h2>
                     <p className="text-[12px] text-zinc-500 mt-1">记录控制台内所有敏感操作的流水，用于合规性核查与责任追溯</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 text-[12px] font-medium text-zinc-600 rounded-md hover:bg-zinc-50 transition-all shadow-sm">
+                <button 
+                    onClick={handleExport}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 text-[12px] font-medium text-zinc-600 rounded-md hover:bg-zinc-50 transition-all shadow-sm"
+                >
                     <Download size={14} /> 导出审计报告 (CSV)
                 </button>
             </div>

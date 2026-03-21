@@ -93,3 +93,10 @@ class RuleFeedback(Base):
     feedback = Column(String(20)) # false_positive, true_positive
     operator = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(JSONB) # Store any config as JSON
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

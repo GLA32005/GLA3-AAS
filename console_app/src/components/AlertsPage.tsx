@@ -15,11 +15,31 @@ export function AlertsPage({ onViewDetail }: AlertsPageProps) {
     const [filterAgent, setFilterAgent] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
+    const fetchAlerts = () => {
         axios.get(API_ENDPOINTS.ALERTS)
             .then(res => setAlerts(res.data.alerts))
             .catch(err => console.error("Failed to fetch alerts:", err));
+    };
+
+    useEffect(() => {
+        fetchAlerts();
     }, []);
+
+    const handleBatchAction = async (action: 'resolved' | 'muted') => {
+        if (selectedAlerts.size === 0) return;
+        try {
+            const res = await axios.post(`${API_ENDPOINTS.ALERTS}/action`, {
+                ids: Array.from(selectedAlerts),
+                action: action
+            });
+            if (res.data.status === 'success') {
+                setSelectedAlerts(new Set());
+                fetchAlerts();
+            }
+        } catch (err) {
+            console.error("Batch action failed:", err);
+        }
+    };
 
     const toggleSelect = (id: number) => {
         const next = new Set(selectedAlerts);
@@ -61,7 +81,7 @@ export function AlertsPage({ onViewDetail }: AlertsPageProps) {
                         <div className="flex items-center gap-2 animate-in slide-in-from-right-2">
                              <span className="text-[11px] text-zinc-500 font-medium">已选择 {selectedAlerts.size} 项</span>
                              <button 
-                                onClick={() => setSelectedAlerts(new Set())}
+                                onClick={() => handleBatchAction('resolved')}
                                 className="px-3 py-1.5 bg-zinc-900 text-white text-[11px] font-bold rounded-md hover:bg-zinc-800 transition-all shadow-lg"
                              >
                                  批量标记为“已处理”

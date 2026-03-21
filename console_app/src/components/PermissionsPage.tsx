@@ -1,30 +1,29 @@
-import { Shield, Users, Lock, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../lib/api';
+import { cn } from '../lib/utils';
+import { Shield, Users, Lock, CheckCircle2, UserCircle } from 'lucide-react';
 
 export function PermissionsPage() {
-  const roles = [
-    {
-      name: 'System Administrator (Admin)',
-      description: 'Full access to all security policies and system configurations.',
-      capabilities: [
-        { name: 'Update Rule Engine', status: 'pass' },
-        { name: 'Approve Tool Escalation', status: 'pass' },
-        { name: 'Manage Webhooks', status: 'pass' },
-        { name: 'View Audit Logs', status: 'pass' },
-        { name: 'Delete Agents', status: 'pass' },
-      ]
-    },
-    {
-      name: 'Security Auditor (Read-Only)',
-      description: 'Restricted access for monitoring and report generation.',
-      capabilities: [
-        { name: 'Update Rule Engine', status: 'fail' },
-        { name: 'Approve Tool Escalation', status: 'fail' },
-        { name: 'Manage Webhooks', status: 'fail' },
-        { name: 'View Audit Logs', status: 'pass' },
-        { name: 'Delete Agents', status: 'fail' },
-      ]
-    }
-  ];
+  const [data, setData] = useState<{roles: any[], admins: any[]}>({ roles: [], admins: [] });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await axios.get(API_ENDPOINTS.PERMISSIONS);
+        setData(res.data);
+      } catch (err) {
+        console.error("Failed to fetch permissions:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const roles = data.roles;
+  const admins = data.admins;
 
   return (
     <div className="p-8 space-y-6 max-w-[1200px] mx-auto animate-in fade-in duration-500">
@@ -34,7 +33,11 @@ export function PermissionsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-8">
-        {roles.map((role, i) => (
+        {isLoading ? (
+          Array(2).fill(0).map((_, i) => (
+            <div key={i} className="bg-white border border-zinc-100 rounded-xl p-6 h-64 animate-pulse"></div>
+          ))
+        ) : roles.map((role: any, i: number) => (
           <div key={i} className="bg-white border-[0.5px] border-zinc-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-zinc-50 rounded-lg border border-zinc-100">
@@ -47,7 +50,7 @@ export function PermissionsPage() {
             </div>
 
             <div className="space-y-3 mt-6">
-              {role.capabilities.map((cap, j) => (
+              {role.capabilities.map((cap: any, j: number) => (
                 <div key={j} className="flex items-center justify-between p-3 rounded-lg bg-zinc-50/50 border border-transparent hover:border-zinc-100 transition-all">
                   <span className="text-[13px] text-zinc-600 font-medium">{cap.name}</span>
                   {cap.status === 'pass' ? (
@@ -64,6 +67,50 @@ export function PermissionsPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden mt-8">
+        <div className="px-6 py-4 border-b border-zinc-100 bg-[#fcfcff] flex items-center justify-between">
+            <h3 className="text-[13px] font-bold text-zinc-700 uppercase tracking-widest flex items-center gap-2">
+                <Users size={14} className="text-indigo-500" /> 当前在线管理员清单
+            </h3>
+        </div>
+        <table className="w-full text-left border-collapse text-[12px]">
+            <thead className="bg-[#fcfcff] border-b border-zinc-100 text-zinc-400 uppercase tracking-widest font-bold text-[9px]">
+                <tr>
+                    <th className="px-6 py-4">用户名</th>
+                    <th className="px-6 py-4">系统角色</th>
+                    <th className="px-6 py-4">加入时间</th>
+                    <th className="px-6 py-4 text-right">状态</th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-50">
+                {isLoading ? (
+                    Array(3).fill(0).map((_, i) => <tr key={i} className="animate-pulse"><td colSpan={4} className="h-12 bg-zinc-50/20"></td></tr>)
+                ) : admins.map((admin: any, i: number) => (
+                    <tr key={i} className="hover:bg-zinc-50 transition-colors">
+                        <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 text-zinc-700 font-medium">
+                                <UserCircle size={14} className="text-zinc-300" />
+                                {admin.username}
+                            </div>
+                        </td>
+                        <td className="px-6 py-4">
+                             <span className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                admin.role === 'admin' ? "bg-purple-50 text-purple-600" : "bg-zinc-100 text-zinc-500"
+                             )}>
+                                {admin.role}
+                             </span>
+                        </td>
+                        <td className="px-6 py-4 text-zinc-400">{admin.created_at}</td>
+                        <td className="px-6 py-4 text-right">
+                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
       </div>
 
       <div className="bg-amber-50 border border-amber-100 rounded-xl p-6 flex gap-4 mt-8">

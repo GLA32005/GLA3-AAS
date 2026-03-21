@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { ChevronRight, ShieldAlert, FileCode, Users, Cpu, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { API_ENDPOINTS } from '../lib/api';
 
 interface ReportPageProps {
   onBack: () => void;
@@ -9,10 +11,25 @@ interface ReportPageProps {
 
 export function ReportPage({ onBack, agentName = 'customer-service-agent' }: ReportPageProps) {
   const [openIssues, setOpenIssues] = useState<Record<string, boolean>>({ 'rag': true });
+  const [reportData, setReportData] = useState<any>(null);
+
+  useEffect(() => {
+    axios.get(`${API_ENDPOINTS.AGENTS}/report/${agentName}`)
+      .then(res => setReportData(res.data))
+      .catch(err => console.error("Failed to fetch agent report:", err));
+  }, [agentName]);
 
   const toggleIssue = (id: string) => {
     setOpenIssues(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  if (!reportData) return (
+    <div className="flex items-center justify-center h-full text-zinc-400 text-sm">
+      深度聚合安全数据中...
+    </div>
+  );
+
+  const { agent, stats, trend } = reportData;
 
   return (
     <div className="p-8 space-y-6 max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -27,37 +44,41 @@ export function ReportPage({ onBack, agentName = 'customer-service-agent' }: Rep
         </button>
       </div>
 
-      <div className="bg-[#fdf2f2] border-[0.5px] border-[#e5a8a8] rounded-lg p-6 flex items-center justify-between shadow-sm">
+      <div className={cn("rounded-lg p-6 flex items-center justify-between shadow-sm border-[0.5px]", agent.risk_score > 60 ? "bg-[#fdf2f2] border-[#e5a8a8]" : "bg-[#eef9f2] border-[#98c9b3]")}>
         <div className="flex items-center gap-5">
-          <div className="w-12 h-12 rounded-xl bg-[#9a2828] flex items-center justify-center text-white font-bold text-lg shadow-sm">
-            CS
+          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm", agent.risk_score > 60 ? "bg-[#9a2828]" : "bg-[#185b46]")}>
+            {agent.name.substring(0, 2).toUpperCase()}
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-medium text-zinc-800 tracking-tight">{agentName}</h1>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#fdf2f2] text-[#9a2828] border border-[#e5a8a8] font-bold uppercase">High Risk</span>
+              <h1 className="text-lg font-medium text-zinc-800 tracking-tight">{agent.name}</h1>
+              <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border", agent.risk_score > 60 ? "bg-[#fdf2f2] text-[#9a2828] border-[#e5a8a8]" : "bg-[#eef9f2] text-[#185b46] border-[#98c9b3]")}>
+                {agent.risk_score > 60 ? "High Risk" : "Secure"}
+              </span>
             </div>
             <div className="text-[11px] text-zinc-500 mt-1 flex items-center gap-3">
-                <span className="flex items-center gap-1"><Cpu size={10} /> LangChain · Python 3.11</span>
+                <span className="flex items-center gap-1"><Cpu size={10} /> {agent.framework} · Python 3.11</span>
                 <span>•</span>
-                <span className="flex items-center gap-1 text-[#8d5b2d] font-medium"><AlertTriangle size={10} /> warn 模式 (待升级)</span>
+                <span className={cn("flex items-center gap-1 font-medium", agent.mode === 'block' ? "text-[#185b46]" : "text-[#8d5b2d]")}>
+                  <AlertTriangle size={10} /> {agent.mode} 模式 {agent.mode === 'warn' && '(建议升级)'}
+                </span>
                 <span>•</span>
-                <span className="text-zinc-400">上次扫描: 3分钟前</span>
+                <span className="text-zinc-400">负责人: {agent.owner}</span>
             </div>
           </div>
         </div>
-        <div className="text-center px-4 border-l border-[#e5a8a8]">
-          <div className="text-3xl font-bold text-[#9a2828] tabular-nums">82</div>
+        <div className={cn("text-center px-4 border-l", agent.risk_score > 60 ? "border-[#e5a8a8]" : "border-[#98c9b3]")}>
+          <div className={cn("text-3xl font-bold tabular-nums", agent.risk_score > 60 ? "text-[#9a2828]" : "text-[#185b46]")}>{agent.risk_score}</div>
           <div className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">风险评分</div>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: '今日触发告警', val: '23', color: 'text-[#9a2828]' },
-          { label: '间接注入命中', val: '19', color: 'text-[#8d5b2d]' },
-          { label: '工具权限盈余', val: '11 → 4', color: 'text-[#8d5b2d]' },
-          { label: '模式切换建议', val: 'BLOCK', color: 'text-[#185b46]' },
+          { label: '今日触发告警', val: stats.today_alerts.toString(), color: 'text-[#9a2828]' },
+          { label: '间接注入命中', val: stats.rag_alerts.toString(), color: 'text-[#8d5b2d]' },
+          { label: '工具权限风险', val: `发现 ${stats.unused_tools} 项过多赋权`, color: 'text-[#8d5b2d]' },
+          { label: '模式切换建议', val: agent.mode === 'block' ? '已最高防等级' : '建议切换至 BLOCK', color: 'text-[#185b46]' },
         ].map((s, i) => (
           <div key={i} className="bg-white border-[0.5px] border-zinc-200 rounded-lg p-4 shadow-sm">
             <div className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider mb-1">{s.label}</div>
@@ -68,19 +89,23 @@ export function ReportPage({ onBack, agentName = 'customer-service-agent' }: Rep
 
       <div className="bg-white border-[0.5px] border-zinc-200 rounded-lg p-5 shadow-sm">
           <div className="flex justify-between items-center mb-4">
-              <h4 className="text-[12px] font-bold text-zinc-700 uppercase tracking-widest">本周风险趋势分析 (Weekly Trend)</h4>
-              <span className="text-[10px] text-zinc-400">数据截止: 今日 15:00</span>
+              <h4 className="text-[12px] font-bold text-zinc-700 uppercase tracking-widest">近 7 日风险趋势分析 (Weekly Trend)</h4>
+              <span className="text-[10px] text-zinc-400">数据截止: 当前</span>
           </div>
           <div className="flex items-end gap-3 h-32 px-4">
-              {[65, 42, 38, 55, 82, 91, 76].map((h, i) => (
-                  <div key={i} className="flex-1 group relative">
-                      <div 
-                        className={cn("w-full rounded-t-sm transition-all duration-500", i === 5 ? "bg-[#9a2828]" : "bg-zinc-100 group-hover:bg-zinc-200")} 
-                        style={{ height: `${h}%` }}
-                      ></div>
-                      <div className="text-[9px] text-zinc-400 text-center mt-2">D{i+1}</div>
-                  </div>
-              ))}
+              {trend.map((h: number, i: number) => {
+                  const maxTrend = Math.max(...trend, 1);
+                  const heightPercent = (h / maxTrend) * 90 + 10;
+                  return (
+                    <div key={i} className="flex-1 group relative">
+                        <div 
+                          className={cn("w-full rounded-t-sm transition-all duration-500", h > 10 ? "bg-[#9a2828]" : "bg-zinc-100 group-hover:bg-zinc-200")} 
+                          style={{ height: `${heightPercent}%` }}
+                        ></div>
+                        <div className="text-[9px] text-zinc-400 text-center mt-2">D{i+1}</div>
+                    </div>
+                  );
+              })}
           </div>
           <p className="text-[11px] text-zinc-500 mt-6 leading-relaxed bg-zinc-50 p-3 rounded border border-dashed border-zinc-200">
              <span className="font-bold text-zinc-700">周度洞察:</span> 风险评分在本周五（D5）出现显著飙升，与 RAG 间接注入攻击频率增加 400% 呈强相关。建议立即执行建议的模式切换。

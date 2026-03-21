@@ -8,16 +8,35 @@ export function RulesPage() {
     const [rules, setRules] = useState<any[]>([]);
     const [meta, setMeta] = useState<any>(null);
 
-    useEffect(() => {
+    const fetchRules = () => {
         axios.get(API_ENDPOINTS.RULES)
           .then(res => {
               setRules(res.data.rules);
               setMeta(res.data);
           })
           .catch(err => console.error("Failed to fetch rules:", err));
-      }, []);
+    };
 
-    if (!meta) return null;
+    useEffect(() => {
+        fetchRules();
+    }, []);
+
+    const handleToggle = async (ruleId: string) => {
+        try {
+            const res = await axios.put(`${API_ENDPOINTS.RULES}/${ruleId}/toggle`);
+            if (res.data.status === 'success') {
+                setRules(prev => prev.map(r => r.id === ruleId ? { ...r, enabled: res.data.enabled } : r));
+            }
+        } catch (err) {
+            console.error("Toggle rule failed:", err);
+        }
+    };
+
+    if (!meta) return (
+        <div className="flex items-center justify-center h-full text-zinc-400 text-sm">
+            正在拉取全量安全合规基线...
+        </div>
+    );
 
     return (
         <div className="p-8 space-y-6 max-w-[1600px] mx-auto">
@@ -43,14 +62,14 @@ export function RulesPage() {
             </div>
 
             <div className="grid grid-cols-12 gap-6">
-                <div className="col-span-8 bg-white border-[0.5px] border-zinc-200 rounded-lg shadow-sm overflow-hidden">
+                <div className="col-span-8 bg-white border-[0.5px] border-zinc-200 rounded-lg shadow-sm overflow-hidden flex flex-col min-h-[400px]">
                     <div className="px-5 py-4 border-b-[0.5px] border-zinc-200 bg-zinc-50 flex justify-between items-center">
                         <h3 className="text-[13px] font-medium text-zinc-700">启发式规则集 (Heuristics)</h3>
                         <span className="text-[11px] text-zinc-500 bg-white border border-zinc-200 px-2 py-0.5 rounded shadow-sm">共 {rules.length} 条启停规则</span>
                     </div>
-                    <ul className="divide-y-[0.5px] divide-zinc-100">
+                    <ul className="divide-y-[0.5px] divide-zinc-100 flex-1">
                         {rules.map((rule: any) => (
-                            <li key={rule.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                            <li key={rule.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors cursor-pointer" onClick={() => handleToggle(rule.id)}>
                                 <div className="flex items-center gap-3">
                                     {rule.enabled ? (
                                         <CheckCircle2 size={16} strokeWidth={1.5} className="text-[#185b46]" />
@@ -65,7 +84,7 @@ export function RulesPage() {
                                 <div className="flex items-center gap-4">
                                      <span className="text-[11px] text-zinc-500">命中频度: <span className="font-mono">{rule.hits}</span> 次</span>
                                      <div className={cn("w-8 h-4 rounded-full flex items-center px-0.5 cursor-pointer transition-colors", rule.enabled ? "bg-[#b4b2e8] justify-end" : "bg-zinc-200 justify-start")}>
-                                         <div className="w-3 h-3 rounded-full bg-white shadow-sm"></div>
+                                         <div className="w-3 h-3 rounded-full bg-white shadow-sm transition-transform"></div>
                                      </div>
                                 </div>
                             </li>

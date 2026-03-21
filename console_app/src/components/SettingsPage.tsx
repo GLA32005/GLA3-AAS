@@ -5,7 +5,13 @@ import { cn } from '../lib/utils';
 import { API_ENDPOINTS } from '../lib/api';
 
 export function SettingsPage() {
-    const [syncInterval, setSyncInterval] = useState(60);
+    const [globalConfig, setGlobalConfig] = useState({
+        default_mode: 'block',
+        onnx_enabled: true,
+        cloud_api_enabled: false,
+        human_review_enabled: false,
+        sync_interval: 60
+    });
     const [pushConfig, setPushConfig] = useState({
         webhook_url: '',
         critical_only: true,
@@ -14,15 +20,28 @@ export function SettingsPage() {
     const [saveStatus, setSaveStatus] = useState<null | 'saving' | 'saved'>(null);
 
     useEffect(() => {
-        axios.get(`${API_ENDPOINTS.SETTINGS}/push`)
-            .then(res => setPushConfig(res.data))
-            .catch(err => console.error("Failed to fetch push settings:", err));
+        const fetchSettings = async () => {
+            try {
+                const [globalRes, pushRes] = await Promise.all([
+                    axios.get(`${API_ENDPOINTS.SETTINGS}/global`),
+                    axios.get(`${API_ENDPOINTS.SETTINGS}/push`)
+                ]);
+                setGlobalConfig(globalRes.data);
+                setPushConfig(pushRes.data);
+            } catch (err) {
+                console.error("Failed to fetch settings:", err);
+            }
+        };
+        fetchSettings();
     }, []);
 
     const handleSave = async () => {
         setSaveStatus('saving');
         try {
-            await axios.post(`${API_ENDPOINTS.SETTINGS}/push`, pushConfig);
+            await Promise.all([
+                axios.post(`${API_ENDPOINTS.SETTINGS}/global`, globalConfig),
+                axios.post(`${API_ENDPOINTS.SETTINGS}/push`, pushConfig)
+            ]);
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus(null), 2000);
         } catch (err) {
@@ -70,8 +89,20 @@ export function SettingsPage() {
                                     <div className="text-[10px] text-zinc-400 mt-0.5">warn = 仅审计，block = 实时拦截风险载荷。</div>
                                 </div>
                                 <div className="flex border border-zinc-200 rounded-md overflow-hidden text-[10px] font-bold">
-                                    <button className="px-3 py-1.5 bg-zinc-50 text-zinc-400 hover:bg-zinc-100 transition-colors border-r border-zinc-200 uppercase">Warn</button>
-                                    <button className="px-3 py-1.5 bg-indigo-50 text-indigo-600 uppercase">Block</button>
+                                    <button 
+                                        onClick={() => setGlobalConfig({...globalConfig, default_mode: 'warn'})}
+                                        className={cn(
+                                            "px-3 py-1.5 transition-colors border-r border-zinc-200 uppercase",
+                                            globalConfig.default_mode === 'warn' ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400 hover:bg-zinc-100"
+                                        )}
+                                    >Warn</button>
+                                    <button 
+                                        onClick={() => setGlobalConfig({...globalConfig, default_mode: 'block'})}
+                                        className={cn(
+                                            "px-3 py-1.5 transition-colors uppercase",
+                                            globalConfig.default_mode === 'block' ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400 hover:bg-zinc-100"
+                                        )}
+                                    >Block</button>
                                 </div>
                             </div>
 
@@ -83,7 +114,13 @@ export function SettingsPage() {
                                     </div>
                                     <div className="text-[10px] text-zinc-400 mt-0.5">启用本地蒸馏模型进行异步语义检测，不产生网络延迟。</div>
                                 </div>
-                                <div className="w-8 h-4 rounded-full bg-emerald-500 flex items-center px-0.5 cursor-pointer justify-end transition-all shadow-inner">
+                                <div 
+                                    onClick={() => setGlobalConfig({...globalConfig, onnx_enabled: !globalConfig.onnx_enabled})}
+                                    className={cn(
+                                        "w-8 h-4 rounded-full flex items-center px-0.5 cursor-pointer transition-all shadow-inner",
+                                        globalConfig.onnx_enabled ? "bg-emerald-500 justify-end" : "bg-zinc-200 justify-start"
+                                    )}
+                                >
                                     <div className="w-3 h-3 rounded-full bg-white shadow-sm"></div>
                                 </div>
                             </div>
@@ -96,7 +133,13 @@ export function SettingsPage() {
                                     </div>
                                     <div className="text-[10px] text-zinc-400 mt-0.5">将匿名特征上传至 AgentSec 安全云，获取最高精度防护。</div>
                                 </div>
-                                <div className="w-8 h-4 rounded-full bg-zinc-200 flex items-center px-0.5 cursor-pointer justify-start transition-all shadow-inner">
+                                <div 
+                                    onClick={() => setGlobalConfig({...globalConfig, cloud_api_enabled: !globalConfig.cloud_api_enabled})}
+                                    className={cn(
+                                        "w-8 h-4 rounded-full flex items-center px-0.5 cursor-pointer transition-all shadow-inner",
+                                        globalConfig.cloud_api_enabled ? "bg-emerald-500 justify-end" : "bg-zinc-200 justify-start"
+                                    )}
+                                >
                                     <div className="w-3 h-3 rounded-full bg-white shadow-sm"></div>
                                 </div>
                             </div>
@@ -109,7 +152,13 @@ export function SettingsPage() {
                                     </div>
                                     <div className="text-[10px] text-zinc-400 mt-0.5">针对 delete/email 等高危 Tool 强制挂起并推送人工决策。</div>
                                 </div>
-                                <div className="w-8 h-4 rounded-full bg-zinc-200 flex items-center px-0.5 cursor-pointer justify-start transition-all shadow-inner">
+                                <div 
+                                    onClick={() => setGlobalConfig({...globalConfig, human_review_enabled: !globalConfig.human_review_enabled})}
+                                    className={cn(
+                                        "w-8 h-4 rounded-full flex items-center px-0.5 cursor-pointer transition-all shadow-inner",
+                                        globalConfig.human_review_enabled ? "bg-emerald-500 justify-end" : "bg-zinc-200 justify-start"
+                                    )}
+                                >
                                     <div className="w-3 h-3 rounded-full bg-white shadow-sm"></div>
                                 </div>
                             </div>
@@ -133,15 +182,15 @@ export function SettingsPage() {
                             <div className="flex flex-col gap-2">
                                 <div className="flex justify-between items-center">
                                     <label className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">同步频率评估</label>
-                                    <span className="text-[11px] font-bold text-indigo-600 tabular-nums bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{syncInterval} Mins</span>
+                                    <span className="text-[11px] font-bold text-indigo-600 tabular-nums bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{globalConfig.sync_interval} Mins</span>
                                 </div>
                                 <input 
                                     type="range" 
                                     min="15" 
                                     max="240" 
                                     step="15" 
-                                    value={syncInterval} 
-                                    onChange={(e) => setSyncInterval(Number(e.target.value))}
+                                    value={globalConfig.sync_interval} 
+                                    onChange={(e) => setGlobalConfig({...globalConfig, sync_interval: Number(e.target.value)})}
                                     className="w-full accent-indigo-600 h-1 bg-zinc-100 rounded-lg cursor-pointer" 
                                 />
                                 <p className="text-[10px] text-zinc-400">目前 v2.41 规则包约每小时更新一次全局威胁指纹。</p>
