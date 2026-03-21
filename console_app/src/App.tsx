@@ -24,15 +24,23 @@ function App() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
   const [alertCount, setAlertCount] = useState(0);
+  const [agentCount, setAgentCount] = useState(0);
 
-  const fetchAlertCount = async () => {
+  const fetchCounters = async () => {
     try {
-      const res = await axios.get('/api/alerts');
-      if (Array.isArray(res.data)) {
-        setAlertCount(res.data.length);
+      // 1. 获取告警数 (需解析 .alerts 数组)
+      const alertsRes = await axios.get('/api/alerts');
+      if (alertsRes.data && alertsRes.data.alerts) {
+        setAlertCount(alertsRes.data.alerts.length);
+      }
+      
+      // 2. 获取 Agent 数 (需解析 .agents 数组)
+      const agentsRes = await axios.get('/api/agents');
+      if (agentsRes.data && agentsRes.data.agents) {
+        setAgentCount(agentsRes.data.agents.length);
       }
     } catch (err) {
-      console.error("Failed to fetch alert count:", err);
+      console.error("Failed to fetch sidebar counters:", err);
     }
   };
 
@@ -40,15 +48,15 @@ function App() {
     const token = localStorage.getItem('agentsec_token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchAlertCount(); // Initial fetch
+      fetchCounters(); // Initial fetch
     }
 
-    // Poll every 30 seconds
+    // 提高轮询频率至 15s 以获得更及时的反馈
     const interval = setInterval(() => {
       if (localStorage.getItem('agentsec_token')) {
-        fetchAlertCount();
+        fetchCounters();
       }
-    }, 30000);
+    }, 15000);
 
     const interceptor = axios.interceptors.response.use(
       (response) => response,
@@ -93,7 +101,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-[#f9fafb] text-zinc-800 overflow-hidden font-sans">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} alertCount={alertCount} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} alertCount={alertCount} agentCount={agentCount} />
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Topbar activePage={activePage} />

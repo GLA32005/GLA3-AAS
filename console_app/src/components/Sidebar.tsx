@@ -6,6 +6,7 @@ interface SidebarProps {
   setActivePage: (page: string) => void;
   onLogout?: () => void;
   alertCount?: number;
+  agentCount?: number;
 }
 
 interface NavItem {
@@ -38,7 +39,7 @@ const navItems: NavGroup[] = [
   ]}
 ];
 
-export function Sidebar({ activePage, setActivePage, onLogout, alertCount = 0 }: SidebarProps) {
+export function Sidebar({ activePage, setActivePage, onLogout, alertCount = 0, agentCount = 0 }: SidebarProps) {
   return (
     <div className="w-60 bg-white border-r border-zinc-200 flex flex-col pt-6 font-sans shadow-sm z-10 w-shrink-0">
       <div className="px-6 pb-6 mb-2">
@@ -58,7 +59,10 @@ export function Sidebar({ activePage, setActivePage, onLogout, alertCount = 0 }:
               {group.section}
             </div>
             {group.items.map(item => {
-              const currentBadge = item.id === 'alerts' ? alertCount : item.badge;
+              // 优先级：告警数 > Agent数 > 静态徽标
+              let currentBadge = item.badge;
+              if (item.id === 'alerts') currentBadge = alertCount;
+              if (item.id === 'agents') currentBadge = agentCount;
               
               return (
                 <div 
@@ -73,11 +77,12 @@ export function Sidebar({ activePage, setActivePage, onLogout, alertCount = 0 }:
                 >
                   <item.icon size={15} className={cn("shrink-0", activePage === item.id ? "text-[#4c1d95]" : "text-zinc-400 group-hover:text-zinc-600")} strokeWidth={activePage === item.id ? 1.5 : 1} />
                   <span className="flex-1">{item.label}</span>
-                  {currentBadge && currentBadge !== 0 && (
+                  {currentBadge !== undefined && currentBadge !== 0 && (
                     <span className={cn(
                       "text-[10px] px-1.5 py-0.5 rounded font-bold transition-colors", 
                       activePage === item.id ? "bg-[#ddd6fe] text-[#4c1d95]" : "bg-zinc-100 text-zinc-500",
-                      item.id === 'alerts' && alertCount > 0 && "bg-red-50 text-red-600 animate-pulse border border-red-100"
+                      item.id === 'alerts' && alertCount > 0 && "bg-red-50 text-red-600 animate-pulse border border-red-100",
+                      item.id === 'agents' && "bg-[#eff0ff] text-[#323282]"
                     )}>
                       {currentBadge}
                     </span>
