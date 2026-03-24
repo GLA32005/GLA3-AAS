@@ -169,39 +169,53 @@ async def health_check():
 # ----------- MOCK DATA GENERATION -----------
 # ----------- DATABASE HELPERS -----------
 async def get_metrics(db: AsyncSession):
-    # 1. 基础计数值
-    now = datetime.utcnow()
-    last_24h = now - timedelta(hours=24)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        # 1. 基础计数值
+        now = datetime.utcnow()
+        last_24h = now - timedelta(hours=24)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    total_agents = (await db.execute(select(func.count(models.Agent.id)))).scalar() or 0
-    new_agents_24h = (await db.execute(select(func.count(models.Agent.id)).where(models.Agent.created_at >= last_24h))).scalar() or 0
-    
-    today_alerts = (await db.execute(select(func.count(models.Alert.id)).where(models.Alert.created_at >= today_start))).scalar() or 0
-    critical_today = (await db.execute(select(func.count(models.Alert.id)).where(models.Alert.severity == "critical", models.Alert.created_at >= today_start))).scalar() or 0
-    
-    # 2. P99 时延计算 (从审计日志获取)
-    # 简单实现：取最近 1000 条日志的 99 分位
-    latency_result = await db.execute(select(models.AuditLog.latency_ms).where(models.AuditLog.latency_ms.isnot(None)).order_by(models.AuditLog.created_at.desc()).limit(1000))
-    latencies = [l for l in latency_result.scalars()]
-    p99 = 0
-    if latencies:
-        latencies.sort()
-        p99 = latencies[int(len(latencies) * 0.99)] if len(latencies) > 0 else 0
+        total_agents = (await db.execute(select(func.count(models.Agent.id)))).scalar() or 0
+        new_agents_24h = (await db.execute(select(func.count(models.Agent.id)).where(models.Agent.created_at >= last_24h))).scalar() or 0
+        
+        today_alerts = (await db.execute(select(func.count(models.Alert.id)).where(models.Alert.created_at >= today_start))).scalar() or 0
+        critical_today = (await db.execute(select(func.count(models.Alert.id)).where(models.Alert.severity == "critical", models.Alert.created_at >= today_start))).scalar() or 0
+        
+        # 2. P99 时延计算
+        p99 = 14
+        try:
+            latency_result = await db.execute(select(models.AuditLog.latency_ms).where(models.AuditLog.latency_ms.isnot(None)).order_by(models.AuditLog.created_at.desc()).limit(1000))
+            latencies = [l for l in latency_result.scalars()]
+            if latencies:
+                latencies.sort()
+                p99 = latencies[int(len(latencies) * 0.99)]
+        except Exception as e:
+            print(f"Metrics: Latency calculation failed: {e}")
 
-    # 3. 误报率模拟逻辑 (基于反馈表)
-    total_feedbacks = (await db.execute(select(func.count(models.RuleFeedback.id)))).scalar() or 0
-    fp_feedbacks = (await db.execute(select(func.count(models.RuleFeedback.id)).where(models.RuleFeedback.feedback == "false_positive"))).scalar() or 0
-    fp_rate = f"{(fp_feedbacks / total_feedbacks * 100):.1f}%" if total_feedbacks > 0 else "0.0%"
+        # 3. 误报率
+        fp_rate = "0.0%"
+        try:
+            total_feedbacks = (await db.execute(select(func.count(models.RuleFeedback.id)))).scalar() or 0
+            if total_feedbacks > 0:
+                fp_feedbacks = (await db.execute(select(func.count(models.RuleFeedback.id)).where(models.RuleFeedback.feedback == "false_positive"))).scalar() or 0
+                fp_rate = f"{(fp_feedbacks / total_feedbacks * 100):.1f}%"
+        except Exception as e:
+             print(f"Metrics: FP Rate calculation failed: {e}")
 
-    return {
-        "online_agents": total_agents,
-        "online_agents_delta": f"+{new_agents_24h}",
-        "today_blocks": today_alerts,
-        "critical_alerts": critical_today,
-        "false_positive_rate": fp_rate,
-        "p99_latency_ms": p99 or 14
-    }
+        return {
+            "online_agents": total_agents,
+            "online_agents_delta": f"+{new_agents_24h}",
+            "today_blocks": today_alerts,
+            "critical_alerts": critical_today,
+            "false_positive_rate": fp_rate,
+            "p99_latency_ms": p99
+        }
+    except Exception as e:
+        print(f"CRITICAL ERROR in get_metrics: {e}")
+        return {
+            "online_agents": 0, "online_agents_delta": "+0", "today_blocks": 0,
+            "critical_alerts": 0, "false_positive_rate": "0.0%", "p99_latency_ms": 14
+        }
 
 @app.post("/api/alerts/report")
 async def report_alert(req: dict, db: AsyncSession = Depends(get_db)):
@@ -250,47 +264,58 @@ def generate_mock_rules():
 @app.get("/api/dashboard")
 async def get_dashboard_summary(db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
     """返回总览页的所有聚合数据"""
-    metrics = await get_metrics(db)
-    
-    # 1. 最近告警 (展示 6 条)
-    result_alerts = await db.execute(
-        select(models.Alert)
-        .options(selectinload(models.Alert.agent))
-        .order_by(models.Alert.created_at.desc())
-        .limit(6)
-    )
-    recent_alerts = []
-    for a in result_alerts.scalars():
-        recent_alerts.append({
-            "id": str(a.id),
-            "level": a.severity.capitalize(),
-            "title": a.title,
-            "agent": a.agent.name if a.agent else "Unknown",
-            "hook_point": a.hook_point,
-            "time": a.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        })
+    try:
+        metrics = await get_metrics(db)
         
-    # 2. 24小时趋向数据 (按小时聚合告警数)
-    now = datetime.utcnow()
-    hourly_trends = [0] * 24
-    trend_result = await db.execute(
-        select(
-            func.extract('hour', models.Alert.created_at).label('hour'),
-            func.count(models.Alert.id).label('count')
-        )
-        .where(models.Alert.created_at >= now - timedelta(hours=24))
-        .group_by(func.extract('hour', models.Alert.created_at))
-    )
-    for row in trend_result:
-        # FastAPI extract hour 可能与当地时间有时差，此处简单演示逻辑
-        h = int(row[0])
-        hourly_trends[h % 24] = row[1]
+        # 1. 最近告警 (展示 6 条)
+        recent_alerts = []
+        try:
+            result_alerts = await db.execute(
+                select(models.Alert)
+                .options(selectinload(models.Alert.agent))
+                .order_by(models.Alert.created_at.desc())
+                .limit(6)
+            )
+            for a in result_alerts.scalars():
+                recent_alerts.append({
+                    "id": str(a.id),
+                    "level": a.severity.capitalize(),
+                    "title": a.title,
+                    "agent": a.agent.name if a.agent else "Unknown",
+                    "hook_point": a.hook_point,
+                    "time": a.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                })
+        except Exception as e:
+            print(f"Dashboard: Recent alerts failed: {e}")
+            
+        # 2. 24小时趋向数据 (按小时聚合告警数)
+        hourly_trends = [0] * 24
+        try:
+            now = datetime.utcnow()
+            trend_result = await db.execute(
+                select(
+                    func.extract('hour', models.Alert.created_at).label('hour'),
+                    func.count(models.Alert.id).label('count')
+                )
+                .where(models.Alert.created_at >= now - timedelta(hours=24))
+                .group_by(func.extract('hour', models.Alert.created_at))
+            )
+            for row in trend_result:
+                try:
+                    h = int(float(row[0])) # 兼容 PG 可能返回的 float/decimal
+                    hourly_trends[h % 24] = row[1]
+                except (TypeError, ValueError): continue
+        except Exception as e:
+            print(f"Dashboard: Trends failed: {e}")
 
-    return {
-        "metrics": metrics,
-        "recent_alerts": recent_alerts,
-        "hourly_trends": hourly_trends
-    }
+        return {
+            "metrics": metrics,
+            "recent_alerts": recent_alerts,
+            "hourly_trends": hourly_trends
+        }
+    except Exception as e:
+        print(f"FATAL Dashboard Failure: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/auth/login")
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
