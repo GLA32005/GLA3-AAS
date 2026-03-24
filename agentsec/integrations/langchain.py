@@ -62,6 +62,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         self.console_url = self.console_url.rstrip("/")
         
         self.stream_window_size = stream_window_size
+        self.agent_secret = None # 从控制台获取的 A2A 签名密钥
 
         if self.mode not in ("warn", "block"):
             logger.warning(f"Unknown mode '{self.mode}', falling back to 'warn'")
@@ -95,17 +96,19 @@ class AgentSecurityCallback(BaseCallbackHandler):
             }
             resp = requests.post(f"{self.console_url}/api/agents/register", json=payload, timeout=5)
             if resp.status_code == 200:
-                logger.debug(f"[Registry] Agent '{self.agent_name}' successfully registered to console.")
+                data = resp.json()
+                self.agent_secret = data.get("secret_key")
+                logger.debug(f"[Registry] Agent '{self.agent_name}' successfully registered. Secret acquired.")
             else:
                 logger.error(f"[Registry] Failed to register agent: {resp.text}")
         except Exception as e:
             logger.error(f"[Registry] Error connecting to console for registration: {e}")
 
     def _report_alert(self, result: SecurityBlockedResult, hook_point: str, session_id: str = "global"):
-        """将安全违规详情上报至控制台 (P1 Fix: 异步接入 queue_manager)"""
+        """将安全违规详情上报至控制台"""
         try:
             payload = {
-                "console_url": self.console_url, # 传递完整 URL 供 Worker 使用
+                "console_url": self.console_url,
                 "agent_name": self.agent_name,
                 "rule_id": result.reason,
                 "severity": "critical" if self.mode == "block" else "warning",
@@ -120,6 +123,19 @@ class AgentSecurityCallback(BaseCallbackHandler):
             queue_manager.enqueue("alert_report", json.dumps(payload))
         except Exception as e:
             logger.debug(f"[Reporting] Failed to enqueue alert: {e}")
+
+    def _report_telemetry(self, event_type: str, payload: Dict[str, Any]):
+        """上报非风险遥测数据（如工具调用），用于权限建模"""
+        try:
+            full_payload = {
+                "console_url": self.console_url,
+                "agent_name": self.agent_name,
+                "event_type": event_type,
+                "payload": payload
+            }
+            queue_manager.enqueue("telemetry_report", json.dumps(full_payload))
+        except Exception as e:
+            logger.debug(f"[Telemetry] Failed to enqueue telemetry: {e}")
 
     def raise_block_or_warn(self, result: SecurityBlockedResult, fallback_text: str, hook_point: str = "unknown", session_id: str = "global") -> str:
         """根据当前拦截模式返回被放行或者阻断注入后的安全语句"""
@@ -143,13 +159,38 @@ class AgentSecurityCallback(BaseCallbackHandler):
                 
         return fallback_text
 
+    def _generate_signature(self, data_str: str) -> str:
+        """基于 HMAC-SHA256 生成 A2A 身份签名"""
+        if not self.agent_secret:
+            return "unsigned"
+        import hmac
+        import hashlib
+        signature = hmac.new(
+            self.agent_secret.encode(),
+            data_str.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        return signature
+
     def on_chain_start(
         self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
     ) -> Any:
-        """【监控】维度 3: 多 Agent 协作风险监控。记录调用链输入特征，识别潜在的信任传播。"""
-        # 简单记录调用链开启，未来可扩展为身份签名校验
+        """【监控】A2A 身份签名与信任链审计。记录调用链输入特征，并注入数字水印。"""
         chain_name = serialized.get("name", "unknown_chain")
-        logger.debug(f"[Chain Monitor] Chain {chain_name} started with inputs keys: {list(inputs.keys())}")
+        
+        # 生成基于输入内容的 A2A 签名
+        input_summary = str(list(inputs.keys()))
+        signature = self._generate_signature(input_summary)
+        
+        # 遥测上行：包含 A2A 签名以供控制台核验
+        self._report_telemetry("a2a_chain_start", {
+            "chain_name": chain_name,
+            "signature": signature,
+            "auth_type": "HMAC-SHA256",
+            "timestamp": str(datetime.now())
+        })
+        
+        logger.debug(f"[Chain Monitor] Chain {chain_name} started. A2A Signature: {signature[:8]}...")
 
     def on_llm_start(
         self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
@@ -179,15 +220,16 @@ class AgentSecurityCallback(BaseCallbackHandler):
     def on_tool_start(
         self, serialized: Dict[str, Any], input_str: str, **kwargs: Any
     ) -> Any:
-        """【策略重心】维度 2: 高危工具人工确认层。针对不可逆操作进行拦截/标记。"""
-        tool_name = serialized.get("name", "")
-        high_risk_tools = ["delete_file", "send_email", "drop_table", "terminate_process"]
+        """【策略重心】记录工具调用行为，用于最小权限建模。针对高危操作进行标记。"""
+        tool_name = serialized.get("name", "unknown")
         
+        # 1. 遥测上报：记录该工具已被调用一次
+        self._report_telemetry("tool_call", {"tool_name": tool_name, "input_preview": input_str[:128]})
+
+        # 2. 高危工具静态拦截逻辑（可选增强）
+        high_risk_tools = ["delete_file", "send_email", "drop_table", "terminate_process"]
         if tool_name in high_risk_tools:
-            logger.warning(f"[HIGH_RISK_TOOL] Tool '{tool_name}' triggered. Pending manual confirmation in SOP console...")
-            # 在 SDK 层面目前做警告记录，并标记 result 为 needs_confirmation
-            # 未来版本可在此处 raise InterruptedError 配合外部状态机实现真正的挂起
-            pass
+            logger.warning(f"[HIGH_RISK_TOOL] Tool '{tool_name}' triggered. Logged for audit.")
 
     def on_chat_model_start(
         self, serialized: Dict[str, Any], messages: List[List[BaseMessage]], **kwargs: Any

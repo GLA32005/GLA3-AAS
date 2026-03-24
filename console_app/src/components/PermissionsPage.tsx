@@ -6,13 +6,32 @@ import { Shield, Users, Lock, CheckCircle2, UserCircle } from 'lucide-react';
 
 export function PermissionsPage() {
   const [data, setData] = useState<{roles: any[], admins: any[]}>({ roles: [], admins: [] });
+  const [agents, setAgents] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(API_ENDPOINTS.PERMISSIONS);
-        setData(res.data);
+        const [permRes, agentRes] = await Promise.all([
+          axios.get(API_ENDPOINTS.PERMISSIONS),
+          axios.get(API_ENDPOINTS.AGENTS)
+        ]);
+        
+        setData(permRes.data);
+        setAgents(agentRes.data);
+
+        // 获取前 3 个 Agent 的权限建议进行展示
+        if (agentRes.data.length > 0) {
+          const sugPromises = agentRes.data.slice(0, 3).map(async (agent: any) => {
+            try {
+              const res = await axios.get(API_ENDPOINTS.SUGGESTIONS(agent.id));
+              return { agentName: agent.name, list: res.data };
+            } catch { return null; }
+          });
+          const allSugs = await Promise.all(sugPromises);
+          setSuggestions(allSugs.filter(s => s && s.list.length > 0));
+        }
       } catch (err) {
         console.error("Failed to fetch permissions:", err);
       } finally {
@@ -68,6 +87,52 @@ export function PermissionsPage() {
           </div>
         ))}
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="mt-8 space-y-4 animate-in slide-in-from-bottom duration-700">
+          <div className="flex items-center gap-2 mb-2">
+             <div className="p-1.5 bg-indigo-50 rounded text-indigo-600">
+                <Shield size={16} />
+             </div>
+             <h3 className="text-[14px] font-bold text-zinc-700">AI 最小权限治理建议 (Least Privilege Insights)</h3>
+             <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[10px] font-bold rounded-full animate-pulse">BETA: EXPERT ENGINE</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {suggestions.map((sug: any, i: number) => (
+              <div key={i} className="bg-white border-[0.5px] border-zinc-200 rounded-xl overflow-hidden shadow-sm flex flex-col hover:border-indigo-200 transition-colors">
+                <div className="px-4 py-3 border-b border-zinc-50 bg-zinc-50/50 flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-zinc-700 flex items-center gap-1.5">
+                    <CheckCircle2 size={12} className="text-indigo-500" /> {sug.agentName}
+                  </span>
+                  <span className="text-[10px] bg-white border border-zinc-200 px-2 py-0.5 rounded text-zinc-500 font-medium">行为基线对标中</span>
+                </div>
+                <div className="p-4 flex-grow space-y-3">
+                  {sug.list.map((item: any, j: number) => (
+                    <div key={j} className="p-3 rounded-lg border border-zinc-100 bg-zinc-50/30 space-y-2">
+                       <div className="flex items-center justify-between">
+                          <code className="text-[11px] font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded italic">
+                            {item.tool}
+                          </code>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[9px] font-bold",
+                            item.risk_level === 'High' ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
+                          )}>
+                            {item.risk_level} Risk
+                          </span>
+                       </div>
+                       <p className="text-[11px] text-zinc-500 leading-relaxed">{item.reason}</p>
+                       <button className="w-full mt-2 py-1.5 bg-white border border-zinc-200 text-zinc-600 text-[10px] font-bold rounded hover:bg-zinc-50 hover:border-indigo-300 hover:text-indigo-600 transition-all uppercase tracking-tight">
+                          Apply {item.action}
+                       </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden mt-8">
         <div className="px-6 py-4 border-b border-zinc-100 bg-[#fcfcff] flex items-center justify-between">

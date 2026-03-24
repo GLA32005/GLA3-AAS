@@ -32,11 +32,31 @@ class OnnxModelRunner:
         if task_type == "alert_report":
             self._handle_alert_report(task)
             return
+        elif task_type == "telemetry_report":
+            self._handle_telemetry_report(task)
+            return
 
         self._load_model()
         payload_text = task.get("payload", "")
         # TODO: 将 text 转为 tokenize tensor 然后进行 forward
         logger.debug(f"[Offline Model Runner] Processed payload of length {len(payload_text)}")
+
+    def _handle_telemetry_report(self, task: Dict[str, Any]):
+        """后台异步处理常规遥测数据上报 (New in 3.0)"""
+        try:
+            import requests
+            import json
+            data = json.loads(task.get("payload", "{}"))
+            console_url = data.pop("console_url", "http://127.0.0.1:8000")
+            
+            # telemetry 数据包含 agent_name, event_type, payload
+            resp = requests.post(f"{console_url}/api/agents/telemetry", json=data, timeout=5)
+            if resp.status_code == 200:
+                logger.debug(f"[Async Telemetry] Telemetry synced to console for {data.get('agent_name')}.")
+            else:
+                logger.error(f"[Async Telemetry] Failed to sync telemetry: {resp.text}")
+        except Exception as e:
+            logger.error(f"[Async Telemetry] Error during background telemetry sync: {e}")
 
     def _handle_alert_report(self, task: Dict[str, Any]):
         """后台异步处理告警上报到控制台 (P1 Fix)"""

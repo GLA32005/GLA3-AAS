@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   SETTINGS: `${API_BASE_URL}/api/settings`,
   LOGIN: `${API_BASE_URL}/api/auth/login`,
   LOGOUT: `${API_BASE_URL}/api/auth/logout`,
+  SUGGESTIONS: (agentId: string) => `${API_BASE_URL}/api/agents/${agentId}/suggestions`,
 };
 
 export default API_BASE_URL;

@@ -19,6 +19,8 @@ class Agent(Base):
     mode = Column(String(20), default="warn")
     risk_score = Column(Integer, default=0)
     sdk_status = Column(String(20), default="offline")
+    metadata_json = Column(JSONB, default={}) # 存储资产声明、工具清单等元数据
+    secret_key = Column(String(64)) # 用于 A2A 签名的密钥
     last_seen = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
 
