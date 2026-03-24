@@ -447,13 +447,14 @@ async def get_agents(db: AsyncSession = Depends(get_db), current_user: UserConte
     return {"agents": agents}
 
 @app.get("/api/alerts")
-async def get_alerts_list(db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
-    """获取历史告警记录列表"""
-    result = await db.execute(
-        select(models.Alert)
-        .options(selectinload(models.Alert.agent))
-        .order_by(models.Alert.created_at.desc())
-    )
+async def get_alerts_list(status: str = "all", db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
+    """获取历史告警记录列表，支持按状态过滤"""
+    query = select(models.Alert).options(selectinload(models.Alert.agent)).order_by(models.Alert.created_at.desc())
+    
+    if status != "all":
+        query = query.where(models.Alert.status == status)
+        
+    result = await db.execute(query)
     alerts = []
     for a in result.scalars():
         alerts.append({

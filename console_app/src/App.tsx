@@ -29,8 +29,8 @@ function App() {
 
   const fetchCounters = async () => {
     try {
-      // 1. 获取告警数 (需解析 .alerts 数组)
-      const alertsRes = await axios.get(API_ENDPOINTS.ALERTS);
+      // 1. 获取未处理告警数 (添加 status=open 过滤)
+      const alertsRes = await axios.get(`${API_ENDPOINTS.ALERTS}?status=open`);
       if (alertsRes.data && alertsRes.data.alerts) {
         setAlertCount(alertsRes.data.alerts.length);
       }
@@ -109,7 +109,12 @@ function App() {
         
         <main className="flex-1 overflow-auto bg-[#f9fafb]">
           {activePage === 'overview' && <Dashboard />}
-          {activePage === 'alerts' && <AlertsPage onViewDetail={handleViewAlert} />}
+          {activePage === 'alerts' && (
+            <AlertsPage 
+              onViewDetail={handleViewAlert} 
+              onActionSuccess={fetchCounters} 
+            />
+          )}
           {activePage === 'agents' && <AgentsPage onViewReport={handleViewReport} />}
           {activePage === 'rules' && <RulesPage />}
           {activePage === 'settings' && <SettingsPage />}

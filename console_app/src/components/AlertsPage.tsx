@@ -6,9 +6,10 @@ import { API_ENDPOINTS } from '../lib/api';
 
 interface AlertsPageProps {
     onViewDetail: (alertId: string) => void;
+    onActionSuccess?: () => void;
 }
 
-export function AlertsPage({ onViewDetail }: AlertsPageProps) {
+export function AlertsPage({ onViewDetail, onActionSuccess }: AlertsPageProps) {
     const [alerts, setAlerts] = useState<any[]>([]);
     const [selectedAlerts, setSelectedAlerts] = useState<Set<number>>(new Set());
     const [filterLevel, setFilterLevel] = useState('All');
@@ -35,6 +36,7 @@ export function AlertsPage({ onViewDetail }: AlertsPageProps) {
             if (res.data.status === 'success') {
                 setSelectedAlerts(new Set());
                 fetchAlerts();
+                if (onActionSuccess) onActionSuccess(); // 触发全局计数更新
             }
         } catch (err) {
             console.error("Batch action failed:", err);
