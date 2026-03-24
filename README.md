@@ -154,6 +154,26 @@ export AGENTSEC_OFFLINE=true
 
 ---
 
+## 安全左移：CI/CD 自动化审计 (Security Left-Shift)
+
+针对原型图中高优先级的「在上线前扫描 Agent 配置」模块，AgentSec 提供工业级的 CLI 审计工具，可无缝集成至 GitHub Actions/GitLab CI。
+
+### 1. 本地扫描 (Manual Scan)
+
+```bash
+# 扫描当前项目，若发现 HIGH/CRITICAL 风险则退出码为 1
+python scripts/scan_agent_config.py . --fail-on HIGH
+```
+
+### 2. 流水线集成 (CI/CD Integration)
+
+通过 [agentsec-scan.yml.example](.github/workflows/agentsec-scan.yml.example) 模版，您可以在每次 `pull_request` 时自动触发：
+- **AST 代码审计**：识别硬编码工具、缺失 `AgentSecurityCallback` 等逻辑风险。
+- **依赖扫描**：阻断包含 `langchain_experimental` 等受限库的合并。
+- **凭证检测**：拦截 `.env` 或源码中泄露的 `API_KEY`。
+
+---
+
 ## 防御模式详解
 
 ### WARN 模式（默认）

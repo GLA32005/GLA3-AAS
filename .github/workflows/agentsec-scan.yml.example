@@ -1,0 +1,40 @@
+# AgentSec CI/CD Security Scan Template
+# 🛡️ 在代码上线前自动拦截高危配置
+
+name: AgentSec Security Audit
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          # 仅需基础 Python 即可运行扫描器
+          python -m pip install --upgrade pip
+
+      - name: Run AgentSec Scanner
+        run: |
+          # 扫描当前仓库，若发现 HIGH 及以上风险则阻断流水线
+          python scripts/scan_agent_config.py . --fail-on HIGH
+
+      - name: Archive Security Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentsec-scan-report
+          path: |
+            *.py
+            requirements.txt
