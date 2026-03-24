@@ -5,7 +5,9 @@
  * 在云端部署时，请通过环境变量 VITE_API_URL 指定后端地址。
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+// 在 Vite 环境中，逻辑首选动态发现当前主机的 8000 端口（云端部署兼容性）
+const DEFAULT_API_HOST = typeof window !== 'undefined' ? window.location.hostname : "127.0.0.1";
+const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${DEFAULT_API_HOST}:8000`;
 
 export const API_ENDPOINTS = {
   DASHBOARD: `${API_BASE_URL}/api/dashboard`,

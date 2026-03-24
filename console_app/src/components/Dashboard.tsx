@@ -19,7 +19,7 @@ export function Dashboard() {
       })
       .catch(err => {
         console.error("Failed to fetch dashboard data:", err);
-        setError("无法通过 http://127.0.0.1:8000 连接至安全大脑 (Backend Offline)");
+        setError(`无法连接至安全大脑 (${API_ENDPOINTS.DASHBOARD})。请确认后端服务已启动且网络策略允许访问。`);
       });
   }, []);
 
