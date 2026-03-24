@@ -298,8 +298,12 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
                 </button>
               </div>
             ) : (
-              <button className="px-4 py-2 bg-zinc-900 text-white text-[12px] font-medium rounded-md hover:bg-zinc-800 transition-all">
-                立即执行推荐处置
+              <button 
+                onClick={() => handleApprove('approve')}
+                disabled={approvalStatus !== null}
+                className="px-4 py-2 bg-zinc-900 text-white text-[12px] font-medium rounded-md hover:bg-zinc-800 transition-all flex items-center gap-2"
+              >
+                {approvalStatus === 'approved' ? <><CheckCircle2 size={14}/> 指令已重新下发</> : '立即执行推荐处置'}
               </button>
             )}
           </div>
