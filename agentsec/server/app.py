@@ -900,6 +900,53 @@ security_callback = AgentSecurityCallback(
 """
     return {"agent": agent_name, "code": code}
 
+@app.get("/api/agents/{agent_name}/export/pdf")
+async def export_agent_pdf_report(agent_name: str, db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
+    """为指定 Agent 生成并导出合规审计报告 (PDF 仿真)"""
+    result = await db.execute(select(models.Agent).where(models.Agent.name == agent_name))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    # 记录审计日志
+    await record_audit_log(
+        db, 
+        current_user.username, 
+        "Generate PDF Report", 
+        f"Compliance report exported for {agent_name}", 
+        team_id=current_user.team_id
+    )
+    
+    # 构造模拟 PDF 报文内容
+    import io
+    from fastapi.responses import StreamingResponse
+    
+    report_content = f"""
+    ==================================================
+    AGENTSEC 自动化合规审计报告 (Simulated PDF)
+    ==================================================
+    资产名称: {agent_name}
+    所属业务线: {agent.biz_line}
+    负责人: {agent.owner}
+    安全得分: {100 - agent.risk_score}
+    审计时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    
+    [核心诊断说明]
+    当前 Agent 处于 {agent.mode} 模式。发现的主要风险点包括 RAG 间接注入命中率偏高。
+    建议参考治理中心提供的全量修复代码进行加固。
+    
+    [存证指纹]
+    {uuid.uuid4().hex.upper()}
+    ==================================================
+    """
+    
+    buf = io.BytesIO(report_content.encode('utf-8'))
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=Security_Report_{agent_name}.pdf"}
+    )
+
 @app.get("/api/agents/report/{agent_name}")
 async def get_agent_security_report(agent_name: str, db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
     """深度聚合 Agent 的安全表现报告"""

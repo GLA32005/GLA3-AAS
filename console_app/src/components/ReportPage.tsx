@@ -53,12 +53,31 @@ export function ReportPage({ onBack, agentName = 'customer-service-agent' }: Rep
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     setIsExporting(true);
-    setTimeout(() => {
+    try {
+      const response = await axios.get(`${API_ENDPOINTS.AGENTS}/${agentName}/export/pdf`, {
+        responseType: 'blob',
+      });
+      
+      // 创建 Blob URL 并触发下载
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Security_Report_${agentName}_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // 清理
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to export PDF:", err);
+      // Fallback
+      alert("PDF 生成失败，请检查服务连接。");
+    } finally {
       setIsExporting(false);
-      alert("PDF 报告生成成功，已保存至本地归档。");
-    }, 2000);
+    }
   };
 
   if (!reportData) return (
