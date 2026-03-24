@@ -230,11 +230,10 @@ class AgentSecurityCallback(BaseCallbackHandler):
         high_risk_tools = ["delete_file", "send_email", "drop_table", "terminate_process", "execute_shell_command", "python_repl", "exec_shell"]
         if tool_name in high_risk_tools:
             logger.warning(f"[HIGH_RISK_TOOL] Tool '{tool_name}' triggered. Logged for audit.")
-            # 补全高危工具上报逻辑
-            from agentsec.models.result import SecurityBlockedResult
-            res = SecurityBlockedResult(blocked=True, reason=f"High-risk tool '{tool_name}' invoked", safe_response="Blocked")
+            # 补全高危工具上报逻辑 (Phase 3.0)
+            res = SecurityBlockedResult(blocked=True, reason=f"High Risk Tool: {tool_name}", safe_response="Blocked for safety.")
             metadata = kwargs.get("metadata", {})
-            session_id = metadata.get("session_id", "global")
+            session_id = metadata.get("session_id", kwargs.get("run_id") or "global")
             self._report_alert(res, hook_point="on_tool_start", session_id=session_id)
 
     def on_chat_model_start(
