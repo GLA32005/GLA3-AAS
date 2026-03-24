@@ -18,6 +18,7 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
   const [current, setCurrent] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedDecision, setSelectedDecision] = useState('d1');
+  const [showGraph, setShowGraph] = useState(false);
 
   useEffect(() => {
     if (alertId) {
@@ -128,8 +129,6 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
       code: `agentsec.exceptions.add(agent="${current.agent}", hook="${current.hook_point}")`
     }
   };
-
-  const [showGraph, setShowGraph] = useState(false);
 
   return (
     <div className="p-8 space-y-6 max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
