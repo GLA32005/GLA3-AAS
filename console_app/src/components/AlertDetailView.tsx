@@ -9,7 +9,7 @@ interface AlertDetailViewProps {
   alertId?: string;
 }
 
-export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps) {
+export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
   const [activeTab, setActiveTab] = useState('chain');
   const [feedbackStatus, setFeedbackStatus] = useState<null | 'sending' | 'success'>(null);
   const [approvalStatus, setApprovalStatus] = useState<null | 'approving' | 'approved' | 'rejected'>(null);
@@ -17,6 +17,7 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
   const [isScanning, setIsScanning] = useState(false);
   const [current, setCurrent] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDecision, setSelectedDecision] = useState('d1');
 
   useEffect(() => {
     if (alertId) {
@@ -33,6 +34,7 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
   }, [alertId]);
 
   const handleApprove = async (action: 'approve' | 'reject') => {
+    // ... 原有逻辑保持不变 ...
     setApprovalStatus(action === 'approve' ? 'approving' : 'rejected' as any);
     try {
       await axios.post(`${API_ENDPOINTS.ALERTS}/action`, {
@@ -40,7 +42,6 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
         action: action === 'approve' ? 'resolved' : 'muted'
       });
       setApprovalStatus(action === 'approve' ? 'approved' : 'rejected');
-      // 3秒后返回列表
       setTimeout(onBack, 1500);
     } catch (err) {
       console.error("Action failed:", err);
@@ -96,8 +97,6 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
       正在回溯攻击现场数据...
     </div>
   );
-
-  const [selectedDecision, setSelectedDecision] = useState('d1');
 
   const decisions = {
     d1: { 

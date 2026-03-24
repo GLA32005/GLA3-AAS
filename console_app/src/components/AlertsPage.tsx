@@ -140,8 +140,8 @@ export function AlertsPage({ onViewDetail, onActionSuccess }: AlertsPageProps) {
                             <th className="px-6 py-4 font-medium">触发时间</th>
                             <th className="px-6 py-4 font-medium">来源 Agent</th>
                             <th className="px-6 py-4 font-medium">监测点</th>
-                            <th className="px-6 py-4 font-medium w-1/3">事件描述</th>
-                            <th className="px-6 py-4 font-medium text-right">操作</th>
+                             <th className="px-6 py-4 font-medium w-1/3">事件描述</th>
+                            <th className="px-6 py-4 font-medium text-right">处理状态</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y-[0.5px] divide-zinc-100 overflow-y-auto">
@@ -176,9 +176,14 @@ export function AlertsPage({ onViewDetail, onActionSuccess }: AlertsPageProps) {
                                 <td className="px-6 py-4 text-zinc-600 font-mono text-[11px] font-medium" onClick={() => onViewDetail(alert.id)}>{alert.hook_point}</td>
                                 <td className="px-6 py-4 truncate max-w-sm" title={alert.title} onClick={() => onViewDetail(alert.id)}>{alert.title}</td>
                                 <td className="px-6 py-4 text-right" onClick={() => onViewDetail(alert.id)}>
-                                    <button className="text-[11px] font-semibold text-[#4c1d95] bg-[#f5f3ff] px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-all border border-[#ddd6fe] shadow-sm">
-                                        去处置 ↗
-                                    </button>
+                                    <span className={cn(
+                                        "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
+                                        alert.status === 'open' 
+                                            ? "bg-amber-50 text-amber-600 border border-amber-100" 
+                                            : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                    )}>
+                                        {alert.status === 'open' ? '待处理' : '已处理'}
+                                    </span>
                                 </td>
                             </tr>
                         ))}
