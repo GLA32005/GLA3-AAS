@@ -8,8 +8,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agentsec.integrations.langchain import AgentSecurityCallback
 
-# 模拟环境变量
-CONSOLE_URL = os.environ.get("CONSOLE_URL", "http://127.0.0.1:8000")
+# 优先从环境变量读取后端地址 (AGENTSEC_API_URL 或 CONSOLE_URL)
+# 在云端执行时请执行: export AGENTSEC_API_URL="http://你的服务器IP:8000"
+CONSOLE_URL = os.environ.get("AGENTSEC_API_URL") or os.environ.get("CONSOLE_URL") or "http://127.0.0.1:8000"
+
+if "127.0.0.1" in CONSOLE_URL:
+    print("⚠️  警告: 当前使用 127.0.0.1 作为后端地址。如果你是在云端服务器运行且控制台打不开，请设置 AGENTSEC_API_URL 环境变量。")
 
 def simulate_customer_support_leak():
     """场景 A：金融客服机器人 - 敏感信息泄露拦截"""
@@ -35,9 +39,9 @@ def simulate_customer_support_leak():
     print("Agent 尝试输出响应...")
     
     try:
-        for token in tokens:
-            # 模拟流式输出检测
-            callback.on_llm_new_token(token, metadata={"session_id": "cust-999"})
+        for i, token in enumerate(tokens):
+            # 模拟流式输出检测 (补全 run_id)
+            callback.on_llm_new_token(token, run_id=f"stream_run_{i}", metadata={"session_id": "cust-999"})
             print(f"[{token}]", end="", flush=True)
             time.sleep(0.1)
         print("\n✅ 输出检测正常")
@@ -67,8 +71,8 @@ def simulate_rag_poisoning():
     print("知识库检索完成，正在将结果喂给 LLM...")
     
     try:
-        # 在 RAG 结果返回给 Prompt 组装前执行安全扫描
-        safe_docs = callback.on_retriever_end(retrieved_docs, metadata={"session_id": "kb-777"})
+        # 在 RAG 结果返回给 Prompt 组装前执行安全扫描 (补全 run_id)
+        safe_docs = callback.on_retriever_end(retrieved_docs, run_id="rag_run_123", metadata={"session_id": "kb-777"})
         print("✅ 检索结果扫描完成")
     except Exception as e:
         print(f"🛡️  [AgentSec 实时拦截]: 发现间接注入攻击 (RAG Poisoning)！拦截原因: {e}")
@@ -90,8 +94,8 @@ def simulate_internal_tool_misuse():
     print(f"Agent 尝试调用工具: {tool_name}, 参数: {malicious_cmd}")
     
     try:
-        # 在工具真正执行前拦截
-        callback.on_tool_start({"name": tool_name}, malicious_cmd, metadata={"session_id": "devops-333"})
+        # 在工具真正执行前拦截 (补全 run_id)
+        callback.on_tool_start({"name": tool_name}, malicious_cmd, run_id="tool_run_456", metadata={"session_id": "devops-333"})
         print("✅ 工具调用已批准")
     except Exception as e:
         print(f"🛡️  [AgentSec 实时拦截]: 发现非法提权调用！拦截原因: {e}")

@@ -227,7 +227,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         self._report_telemetry("tool_call", {"tool_name": tool_name, "input_preview": input_str[:128]})
 
         # 2. 高危工具静态拦截逻辑（可选增强）
-        high_risk_tools = ["delete_file", "send_email", "drop_table", "terminate_process"]
+        high_risk_tools = ["delete_file", "send_email", "drop_table", "terminate_process", "execute_shell_command", "python_repl", "exec_shell"]
         if tool_name in high_risk_tools:
             logger.warning(f"[HIGH_RISK_TOOL] Tool '{tool_name}' triggered. Logged for audit.")
 
@@ -246,21 +246,21 @@ class AgentSecurityCallback(BaseCallbackHandler):
         self,
         output: str,
         *,
-        run_id: str,
+        run_id: str = "",
         parent_run_id: Optional[str] = None,
         **kwargs: Any,
     ) -> str:
         """【维度 1】监控外部 Tool 返回的注入指令（如网页爬虫结果），拦截间接注入。"""
         result = engine.evaluate(output)
         if result and result.blocked:
-             return self.raise_block_or_warn(result, output, hook_point="on_tool_end", session_id=str(run_id))
+             return self.raise_block_or_warn(result, output, hook_point="on_tool_end", session_id=str(run_id or "global"))
         return output
 
     def on_retriever_end(
         self,
         documents: List[Any],
         *,
-        run_id: str,
+        run_id: str = "",
         parent_run_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
@@ -269,14 +269,14 @@ class AgentSecurityCallback(BaseCallbackHandler):
             if hasattr(doc, "page_content"):
                 result = engine.evaluate(doc.page_content)
                 if result and result.blocked:
-                    doc.page_content = self.raise_block_or_warn(result, doc.page_content, hook_point="on_retriever_end")
+                    doc.page_content = self.raise_block_or_warn(result, doc.page_content, hook_point="on_retriever_end", session_id=str(run_id or "global"))
         return documents
 
     def on_llm_new_token(
         self,
         token: str,
         *,
-        run_id: str,
+        run_id: str = "",
         parent_run_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
@@ -303,7 +303,7 @@ class AgentSecurityCallback(BaseCallbackHandler):
         self,
         response: LLMResult,
         *,
-        run_id: str,
+        run_id: str = "",
         parent_run_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
