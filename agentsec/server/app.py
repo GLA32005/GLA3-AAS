@@ -848,6 +848,58 @@ async def handle_alert_action(req: dict, db: AsyncSession = Depends(get_db), cur
     await record_audit_log(db, current_user.username, f"Batch {action.capitalize()}", f"Affected {len(alert_ids)} alerts")
     return {"status": "success"}
 
+@app.post("/api/agents/{agent_name}/compliance/mark")
+async def mark_agent_compliant(agent_name: str, db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
+    """将 Agent 标记为全量合规，重置风险分"""
+    result = await db.execute(select(models.Agent).where(models.Agent.name == agent_name))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    agent.risk_score = 0
+    await db.commit()
+    await record_audit_log(db, current_user.username, "Mark Compliant", f"Agent {agent_name} risk score reset to 0", team_id=current_user.team_id)
+    return {"status": "success", "new_score": 0}
+
+@app.get("/api/agents/{agent_name}/remediation/code")
+async def get_agent_remediation_code(agent_name: str, db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
+    """动态生成针对该 Agent 的全量修复代码建议"""
+    result = await db.execute(select(models.Agent).where(models.Agent.name == agent_name))
+    agent = result.scalar_one_or_none()
+    
+    # 动态构建代码岛
+    code = f"""# AgentSec 自动化修复配置 (自动生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M')})
+# 针对资产: {agent_name}
+
+from agentsec.integrations.langchain import AgentSecurityCallback
+from agentsec.core.retriever import SecureRetriever
+
+# 1. 注入 RAG 过滤层 (针对 Dimension 1 注入风险)
+# 建议将您现有的 vectorstore.as_retriever() 替换为以下封装
+secure_retriever = SecureRetriever(
+    base_retriever=your_vectorstore.as_retriever(),
+    mode="block",  # 生产环境强制开启阻断模式
+    safe_response="[AgentSec] 检测到知识库注入风险，内容已脱敏。"
+)
+
+# 2. 补全 SDK 实时研判回调 (针对 Dimension 2 越权风险)
+# 建议在初始化 Agent (如 AgentExecutor) 时注入以下回调
+security_callback = AgentSecurityCallback(
+    mode="block", 
+    agent_name="{agent_name}",
+    business_line="{agent.biz_line if agent else 'default'}",
+    owner="{agent.owner if agent else 'admin'}",
+    stream_window_size=32
+)
+
+# 3. 集成示例
+# agent_executor = AgentExecutor(
+#     ... 
+#     callbacks=[security_callback]
+# )
+"""
+    return {"agent": agent_name, "code": code}
+
 @app.get("/api/agents/report/{agent_name}")
 async def get_agent_security_report(agent_name: str, db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
     """深度聚合 Agent 的安全表现报告"""

@@ -466,6 +466,32 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
               <div className="flex-1 p-10 overflow-auto bg-white flex flex-col items-center justify-center min-h-[400px]">
                  {/* SVG Path Graph Rendering */}
                  <div className="relative w-full max-w-2xl h-80">
+                    {/* SVG Connections - Moved to front for layering */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 600 320">
+                       <defs>
+                          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orientation="auto" markerUnits="strokeWidth">
+                             <path d="M0,0 L0,6 L9,3 z" fill="#cbd5e1" />
+                          </marker>
+                          <marker id="arrow-danger" markerWidth="10" markerHeight="10" refX="8" refY="3" orientation="auto" markerUnits="strokeWidth">
+                             <path d="M0,0 L0,6 L9,3 z" fill="#9a2828" />
+                          </marker>
+                       </defs>
+                       
+                       {/* Connection 1: Attacker -> Gateway */}
+                       <path d="M40,160 L130,160" stroke="#fecaca" strokeWidth="2" strokeDasharray="5,5" markerEnd="url(#arrow-danger)">
+                          <animate attributeName="stroke-dashoffset" from="10" to="0" dur="1.5s" repeatCount="indefinite" />
+                       </path>
+                       
+                       {/* Connection 2: Gateway -> Target */}
+                       <path d="M180,160 Q240,160 280,105" stroke="#9a2828" strokeWidth="2.5" markerEnd="url(#arrow-danger)" fill="none" />
+                       
+                       {/* Connection 3 (Potential): Target -> hr-agent */}
+                       <path d="M330,85 Q450,85 455,220" stroke="#e2e8f0" strokeWidth="2" strokeDasharray="6,4" markerEnd="url(#arrow)" fill="none" />
+                       
+                       {/* Labels */}
+                       <text x="70" y="152" className="text-[10px] fill-red-500 font-bold uppercase tracking-widest font-sans">Payload</text>
+                       <text x="245" y="115" className="text-[10px] fill-red-600 font-bold uppercase tracking-widest font-sans">Break-in</text>
+                    </svg>
                     {/* Nodes */}
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
                        <div className="w-12 h-12 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center text-xl shadow-inner">👤</div>
@@ -493,32 +519,6 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
                        <span className="text-[10px] font-bold text-zinc-400">hr-agent</span>
                     </div>
 
-                    {/* SVG Connections */}
-                    <svg className="absolute inset-0 w-full h-full -z-10 pointer-events-none" viewBox="0 0 600 320">
-                       <defs>
-                          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orientation="auto" markerUnits="strokeWidth">
-                             <path d="M0,0 L0,6 L9,3 z" fill="#e2e8f0" />
-                          </marker>
-                          <marker id="arrow-danger" markerWidth="10" markerHeight="10" refX="8" refY="3" orientation="auto" markerUnits="strokeWidth">
-                             <path d="M0,0 L0,6 L9,3 z" fill="#9a2828" />
-                          </marker>
-                       </defs>
-                       
-                       {/* Connection 1 */}
-                       <path d="M50,160 L140,160" stroke="#fecaca" strokeWidth="2" strokeDasharray="5,5" markerEnd="url(#arrow-danger)">
-                          <animate attributeName="stroke-dashoffset" from="10" to="0" dur="1s" repeatCount="indefinite" />
-                       </path>
-                       
-                       {/* Connection 2 */}
-                       <path d="M210,160 Q260,160 300,100" stroke="#9a2828" strokeWidth="3" markerEnd="url(#arrow-danger)" fill="none" />
-                       
-                       {/* Connection 3 (Pivot) */}
-                       <path d="M400,100 Q450,100 450,230" stroke="#e2e8f0" strokeWidth="2" strokeDasharray="5,5" markerEnd="url(#arrow)" fill="none" />
-                       
-                       {/* Labels */}
-                       <text x="75" y="150" className="text-[9px] fill-red-500 font-bold uppercase tracking-widest">Injection</text>
-                       <text x="240" y="120" className="text-[9px] fill-red-600 font-bold uppercase tracking-widest">Pivot attempt</text>
-                    </svg>
                  </div>
 
                  <div className="mt-12 text-center max-w-md">
