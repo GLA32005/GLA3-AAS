@@ -159,7 +159,7 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
         
         <div className="flex flex-wrap gap-x-8 gap-y-3 pt-6 border-t border-zinc-200/50">
            <div className="text-[11px] text-zinc-400">Agent <span className="text-zinc-800 font-medium ml-1">{current.agent}</span></div>
-           <div className="text-[11px] text-zinc-400">检测点 <span className="text-zinc-800 font-semibold ml-1">{current.hook}</span></div>
+           <div className="text-[11px] text-zinc-400">检测点 <span className="text-zinc-800 font-semibold ml-1">{current.hook_point}</span></div>
            <div className="text-[11px] text-zinc-400">时间 <span className="text-zinc-800 font-medium ml-1">刚刚</span></div>
            <div className="text-[11px] text-zinc-400">置信度 <span className="text-zinc-800 font-bold ml-1">{current.confidence}</span></div>
            <div className="text-[11px] text-zinc-400">处置状态 <span className="text-amber-600 font-bold ml-1">{current.status}</span></div>
@@ -196,8 +196,8 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
           {activeTab === 'chain' && (
             <div className="space-y-6">
                <h3 className="text-[13px] font-medium text-zinc-800 tracking-tight">攻击路径链深度回溯 (Chain Recovery)</h3>
-               <div className="space-y-0 pl-2">
-                 {current.steps.map((s: any, i: number) => (
+                <div className="space-y-0 pl-2">
+                  {current.steps && Array.isArray(current.steps) ? current.steps.map((s: any, i: number) => (
                     <div key={i} className="flex gap-6 relative pb-10 group last:pb-0">
                       {i !== current.steps.length - 1 && <div className="absolute left-2 top-5 bottom-0 w-[1px] bg-zinc-100 group-hover:bg-zinc-200 transition-colors"></div>}
                       <div className={cn("w-4 h-4 rounded-full border-2 bg-white mt-1.5 z-10 shrink-0", s.status === 'danger' ? "border-[#9a2828]" : s.status === 'warn' ? "border-[#8d5b2d]" : "border-zinc-200")}>
@@ -214,13 +214,15 @@ export function AlertDetailView({ alertId = '1', onBack }: AlertDetailViewProps)
                           {s.desc}
                         </div>
                       </div>
-                    </div>
-                 ))}
+                     </div>
+                  )) : (
+                    <div className="text-zinc-400 text-[12px] italic py-4">暂无调用链数据</div>
+                  )}
                </div>
                <div className="mt-6 p-4 bg-[#eff0ff] border border-[#b4b2e8] rounded-md flex items-start gap-4 shadow-sm shadow-indigo-100/50">
                   <Info size={16} className="text-[#323282] mt-0.5" />
                   <div className="text-[12px] text-[#323282] leading-relaxed">
-                    <strong>SOP 诊断结论：</strong> 该事件被识别为 <strong>{current.hook === 'on_retriever_end' ? '维度一：外部间接注入' : current.hook === 'on_llm_start' ? '维度二：敏感信息合规风险' : '维度二：高危工具幻觉风险'}</strong>。建议执行 <strong>方案1 (自动规则升级)</strong> 以实现全局闭环防御。
+                    <strong>SOP 诊断结论：</strong> 该事件被识别为 <strong>{current.hook_point === 'on_retriever_end' ? '维度一：外部间接注入' : current.hook_point === 'on_llm_start' ? '维度二：敏感信息合规风险' : '维度二：高危工具幻觉风险'}</strong>。建议执行 <strong>方案1 (自动规则升级)</strong> 以实现全局闭环防御。
                   </div>
                </div>
             </div>

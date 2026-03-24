@@ -471,10 +471,15 @@ async def get_alerts_list(status: str = "all", db: AsyncSession = Depends(get_db
 @app.get("/api/alerts/{alert_id}")
 async def get_alert_detail(alert_id: str, db: AsyncSession = Depends(get_db), current_user: UserContext = Depends(get_current_user)):
     """获取单条告警的深度详情 (Payload/Session/Context)"""
+    try:
+        target_id = uuid.UUID(alert_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid Alert UUID format")
+
     result = await db.execute(
         select(models.Alert)
         .options(selectinload(models.Alert.agent))
-        .where(models.Alert.id == uuid.UUID(alert_id))
+        .where(models.Alert.id == target_id)
     )
     a = result.scalar_one_or_none()
     if not a:
@@ -491,7 +496,7 @@ async def get_alert_detail(alert_id: str, db: AsyncSession = Depends(get_db), cu
         steps.append({"id": 4, "title": "阻断/告警", "desc": "根据策略执行拦截并脱敏上下文", "tag": "Defense", "status": "danger"})
     elif a.hook_point == "on_tool_start":
         steps.append({"id": 2, "title": "意图识别", "desc": "LLM 决定调用外部工具执行操作", "tag": "Intent", "status": "neutral"})
-        steps.append({"id": 3, "title": "高危调用", "desc": f"尝试调用工具: {a.detail.get('tool', 'unknown')}", "tag": "Risk", "status": "warn"})
+        steps.append({"id": 3, "title": "高危调用", "desc": f"尝试调用工具: {a.detail.get('tool', 'unknown') if a.detail else 'unknown'}", "tag": "Risk", "status": "warn"})
         steps.append({"id": 4, "title": "拦截挂起", "desc": "命中高危工具清单，强制挂起并等待人工研判", "tag": "Pause", "status": "danger"})
     else:
         steps.append({"id": 2, "title": "逻辑处理", "desc": "Agent 内部逻辑执行中", "tag": "Runtime", "status": "neutral"})
@@ -504,7 +509,9 @@ async def get_alert_detail(alert_id: str, db: AsyncSession = Depends(get_db), cu
         "agent": a.agent.name if a.agent else "Unknown",
         "agent_id": str(a.agent_id),
         "hook_point": a.hook_point,
+        "hook": a.hook_point, # 向下兼容前端旧引用
         "title": a.title,
+        "desc": f"该告警由 {a.agent.name if a.agent else 'Agent'} 在执行 {a.hook_point} 时触发。已根据安全策略执行了相应的运行时防护。",
         "detail": a.detail, # JSONB
         "steps": steps,
         "confidence": a.confidence or 0.85,

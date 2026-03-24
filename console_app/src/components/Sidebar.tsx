@@ -96,10 +96,10 @@ export function Sidebar({ activePage, setActivePage, onLogout, alertCount = 0, a
 
       <div className="p-4 border-t border-zinc-100 m-3 rounded-lg bg-zinc-50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-zinc-200 border border-zinc-300"></div>
+              <div className="w-7 h-7 rounded-full bg-zinc-100 border border-zinc-300 flex items-center justify-center text-[11px] font-bold text-zinc-600 shadow-inner">系</div>
               <div>
                   <div className="text-[12px] font-medium text-zinc-700">系统管理员</div>
-                  <div className="text-[10px] text-zinc-500">本地内网环境</div>
+                  <div className="text-[10px] text-zinc-500 font-mono">本地内网环境</div>
               </div>
           </div>
           {onLogout && (
