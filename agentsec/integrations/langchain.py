@@ -230,6 +230,12 @@ class AgentSecurityCallback(BaseCallbackHandler):
         high_risk_tools = ["delete_file", "send_email", "drop_table", "terminate_process", "execute_shell_command", "python_repl", "exec_shell"]
         if tool_name in high_risk_tools:
             logger.warning(f"[HIGH_RISK_TOOL] Tool '{tool_name}' triggered. Logged for audit.")
+            # 补全高危工具上报逻辑
+            from agentsec.models.result import SecurityBlockedResult
+            res = SecurityBlockedResult(blocked=True, reason=f"High-risk tool '{tool_name}' invoked", safe_response="Blocked")
+            metadata = kwargs.get("metadata", {})
+            session_id = metadata.get("session_id", "global")
+            self._report_alert(res, hook_point="on_tool_start", session_id=session_id)
 
     def on_chat_model_start(
         self, serialized: Dict[str, Any], messages: List[List[BaseMessage]], **kwargs: Any
@@ -292,6 +298,12 @@ class AgentSecurityCallback(BaseCallbackHandler):
             result = engine.evaluate(current_text)
             if result and result.blocked:
                 log_msg = f"Security Violation in STREAM (Token {count})! Reason: {result.reason}"
+                
+                # 补全流式上报逻辑 (Phase 3.0)
+                metadata = kwargs.get("metadata", {})
+                session_id = metadata.get("session_id", run_id or "global")
+                self._report_alert(result, hook_point="on_llm_new_token", session_id=session_id)
+
                 if self.mode == "block":
                     logger.warning(f"[BLOCK] {log_msg}. Truncating stream.")
                     # 抛出异常阻断后续 Token 生成
