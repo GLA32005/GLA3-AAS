@@ -129,16 +129,17 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
     }
   };
 
+  const [showGraph, setShowGraph] = useState(false);
+
   return (
     <div className="p-8 space-y-6 max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {/* Breadcrumbs */}
+      {/* ... 之前的 Breadcrumbs 与 Hero Banner 保持不变 ... */}
       <div className="flex items-center gap-2 text-[12px] text-zinc-400 mb-2">
         <span className="hover:text-zinc-600 cursor-pointer transition-colors" onClick={onBack}>告警中心</span>
         <ChevronRight size={12} strokeWidth={1} />
         <span className="text-zinc-800 font-medium">告警研判处置 (SOP)</span>
       </div>
 
-      {/* Hero Alert Banner */}
       <div className={cn(
         "border-[0.5px] border-l-[4px] rounded-lg p-6 flex flex-col shadow-sm",
         current.level === 'Critical' ? "bg-[#fdf2f2] border-[#e5a8a8] border-l-[#9a2828]" : "bg-[#fffbeb] border-[#fde68a] border-l-[#d97706]"
@@ -191,7 +192,7 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
         </div>
 
         <div className="flex-1 p-8">
-          {/* Tab 1: Chain */}
+           {/* Tab 1: Chain */}
           {activeTab === 'chain' && (
             <div className="space-y-6">
                <h3 className="text-[13px] font-medium text-zinc-800 tracking-tight">攻击路径链深度回溯 (Chain Recovery)</h3>
@@ -310,10 +311,10 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
             </div>
           )}
 
-          {/* Tab 3: Whitelist */}
+          {/* Tab 3: Whitelist (保持原有逻辑) */}
           {activeTab === 'whitelist' && (
             <div className="space-y-6">
-               <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                   <h3 className="text-[13px] font-medium text-zinc-800 tracking-tight">Agent 工具权限对比分析 (Dimension 2)</h3>
                   <span className="text-[11px] text-[#9a2828] bg-red-50 px-2.5 py-1 rounded border border-red-100 font-bold tracking-widest uppercase">最小权限核查中</span>
                </div>
@@ -369,7 +370,7 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
             </div>
           )}
 
-          {/* Tab 4: History */}
+          {/* Tab 4: History (激活图谱预览) */}
           {activeTab === 'history' && (
             <div className="space-y-6">
                <div className="flex justify-between items-center">
@@ -436,7 +437,10 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
                             </div>
                         ))}
                     </div>
-                    <button className="w-full mt-4 py-2 bg-white border border-dashed border-indigo-200 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 transition-all uppercase rounded-lg tracking-widest">
+                    <button 
+                      onClick={() => setShowGraph(true)}
+                      className="w-full mt-4 py-2 bg-white border border-dashed border-indigo-200 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 transition-all uppercase rounded-lg tracking-widest"
+                    >
                         查看完整攻击路径图谱 ↗
                     </button>
                   </div>
@@ -445,6 +449,107 @@ export function AlertDetailView({ alertId, onBack }: AlertDetailViewProps) {
           )}
         </div>
       </div>
+
+      {/* Attack Path Graph Modal */}
+      {showGraph && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                 <h3 className="text-sm font-bold text-zinc-800 flex items-center gap-2">
+                    <Layers size={16} className="text-indigo-600" />
+                    全景攻击路径图谱 (Threat Correlation Map)
+                 </h3>
+                 <button onClick={() => setShowGraph(false)} className="text-zinc-400 hover:text-zinc-600">
+                    <RotateCcw size={16} />
+                 </button>
+              </div>
+              
+              <div className="flex-1 p-10 overflow-auto bg-white flex flex-col items-center justify-center min-h-[400px]">
+                 {/* SVG Path Graph Rendering */}
+                 <div className="relative w-full max-w-2xl h-80">
+                    {/* Nodes */}
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                       <div className="w-12 h-12 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center text-xl shadow-inner">👤</div>
+                       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">外部攻击者</span>
+                    </div>
+
+                    <div className="absolute left-1/4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                       <div className="w-16 h-16 rounded-xl bg-zinc-900 text-white flex flex-col items-center justify-center shadow-xl ring-4 ring-zinc-100">
+                          <div className="text-xs font-bold font-mono">APP</div>
+                          <div className="text-[8px] opacity-50">Gateway</div>
+                       </div>
+                       <span className="text-[10px] font-bold text-zinc-800">业务网关</span>
+                    </div>
+
+                    <div className="absolute left-1/2 top-1/4 -translate-y-1/2 flex flex-col items-center gap-2 scale-110">
+                       <div className="w-20 h-20 rounded-2xl bg-indigo-600 text-white flex flex-col items-center justify-center shadow-2xl shadow-indigo-200 border-4 border-white">
+                          <div className="text-xl">🤖</div>
+                          <div className="text-[8px] font-bold">{current.agent}</div>
+                       </div>
+                       <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded shadow-sm">目标资产 (拦截点)</span>
+                    </div>
+
+                    <div className="absolute left-3/4 bottom-1/4 translate-y-1/2 flex flex-col items-center gap-2 opacity-60 grayscale hover:grayscale-0 transition-all cursor-crosshair">
+                       <div className="w-14 h-14 rounded-full bg-white border-2 border-dashed border-zinc-200 flex items-center justify-center text-xl shadow-sm">💼</div>
+                       <span className="text-[10px] font-bold text-zinc-400">hr-agent</span>
+                    </div>
+
+                    {/* SVG Connections */}
+                    <svg className="absolute inset-0 w-full h-full -z-10 pointer-events-none" viewBox="0 0 600 320">
+                       <defs>
+                          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orientation="auto" markerUnits="strokeWidth">
+                             <path d="M0,0 L0,6 L9,3 z" fill="#e2e8f0" />
+                          </marker>
+                          <marker id="arrow-danger" markerWidth="10" markerHeight="10" refX="8" refY="3" orientation="auto" markerUnits="strokeWidth">
+                             <path d="M0,0 L0,6 L9,3 z" fill="#9a2828" />
+                          </marker>
+                       </defs>
+                       
+                       {/* Connection 1 */}
+                       <path d="M50,160 L140,160" stroke="#fecaca" strokeWidth="2" strokeDasharray="5,5" markerEnd="url(#arrow-danger)">
+                          <animate attributeName="stroke-dashoffset" from="10" to="0" dur="1s" repeatCount="indefinite" />
+                       </path>
+                       
+                       {/* Connection 2 */}
+                       <path d="M210,160 Q260,160 300,100" stroke="#9a2828" strokeWidth="3" markerEnd="url(#arrow-danger)" fill="none" />
+                       
+                       {/* Connection 3 (Pivot) */}
+                       <path d="M400,100 Q450,100 450,230" stroke="#e2e8f0" strokeWidth="2" strokeDasharray="5,5" markerEnd="url(#arrow)" fill="none" />
+                       
+                       {/* Labels */}
+                       <text x="75" y="150" className="text-[9px] fill-red-500 font-bold uppercase tracking-widest">Injection</text>
+                       <text x="240" y="120" className="text-[9px] fill-red-600 font-bold uppercase tracking-widest">Pivot attempt</text>
+                    </svg>
+                 </div>
+
+                 <div className="mt-12 text-center max-w-md">
+                    <p className="text-[12px] text-zinc-500 leading-relaxed italic border-l-2 border-indigo-100 pl-4">
+                       “全链路追踪完成：威胁于 {current.time} 接入，通过业务网关注入非法特征对目标 Agent 发起提权攻击，被 AgentSec 内核在 <strong>{current.hook_point}</strong> 处精准截杀，阻断了向内网侧资产 hr-agent 的二次横向扩散。”
+                    </p>
+                 </div>
+              </div>
+
+              <div className="px-8 py-6 bg-zinc-50 border-t border-zinc-100 flex justify-between items-center">
+                 <div className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full bg-red-500" />
+                       <span className="text-[11px] font-bold text-zinc-600 uppercase">攻击路径</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full bg-zinc-200" />
+                       <span className="text-[11px] font-bold text-zinc-600 uppercase">潜在扩散</span>
+                    </div>
+                 </div>
+                 <button 
+                  onClick={() => setShowGraph(false)}
+                  className="px-6 py-2 bg-zinc-900 text-white rounded-lg text-[12px] font-bold hover:bg-zinc-800 transition-all shadow-lg"
+                 >
+                    理解并关闭路径视图
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }
