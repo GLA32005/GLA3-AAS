@@ -11,16 +11,27 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 调用 FastAPI 端点获取数据
-    axios.get(API_ENDPOINTS.DASHBOARD)
-      .then(res => {
-        setData(res.data);
-        setError(null);
-      })
-      .catch(err => {
-        console.error("Failed to fetch dashboard data:", err);
-        setError(`无法连接至安全大脑 (${API_ENDPOINTS.DASHBOARD})。请确认后端服务已启动且网络策略允许访问。`);
-      });
+    let retryCount = 0;
+    const maxRetries = 1;
+
+    const fetchData = () => {
+      axios.get(API_ENDPOINTS.DASHBOARD)
+        .then(res => {
+          setData(res.data);
+          setError(null);
+        })
+        .catch(err => {
+          console.error("Dashboard fetch attempt failed:", err);
+          if (retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(fetchData, 500); // 500ms 后重试一次，规避初始化竞态
+          } else {
+            setError(`无法连接至安全大脑 (${API_ENDPOINTS.DASHBOARD})。请确认后端服务已启动且网络策略允许访问。`);
+          }
+        });
+    };
+
+    fetchData();
   }, []);
 
   if (error) return (

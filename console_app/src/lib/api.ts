@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 /**
  * AgentSec Console API 配置文件
  * 
@@ -23,5 +25,13 @@ export const API_ENDPOINTS = {
   LOGOUT: `${API_BASE_URL}/api/auth/logout`,
   SUGGESTIONS: (agentId: string) => `${API_BASE_URL}/api/agents/${agentId}/suggestions`,
 };
+
+// 全局初始化拦截器与授权头
+if (typeof window !== 'undefined') {
+  const token = localStorage.getItem('agentsec_token');
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+}
 
 export default API_BASE_URL;

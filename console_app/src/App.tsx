@@ -46,12 +46,8 @@ function App() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('agentsec_token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchCounters(); // Initial fetch
-    }
-
+    fetchCounters(); // Initial fetch
+    
     // 提高轮询频率至 15s 以获得更及时的反馈
     const interval = setInterval(() => {
       if (localStorage.getItem('agentsec_token')) {
